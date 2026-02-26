@@ -2,7 +2,7 @@ from config import Config
 from client import AirQualityClient
 from storage import CSVStorage
 
-def main():
+def run_app():
     # Load configuration
     config = Config()
 
@@ -15,4 +15,6 @@ def main():
     # Initialize storage (using CSV as an example)
     storage = CSVStorage()
 
-    
+def main():
+    if __name__ == "__main__":
+        run_app()
