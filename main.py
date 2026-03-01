@@ -1,11 +1,14 @@
 from config import Config
 from client import AirQualityClient, AirQualityReading
-from storage import CSVStorage
+from storage import JSONStorage, CSVStorage
 import json
 
 def run_app():
     # Load configuration
     config = Config()
+
+    # Ensure data directory exists
+    config.DATA_DIR.mkdir(parents=True, exist_ok=True)
     
     # Initialize API client
     client = AirQualityClient(config.IQAIR_API_KEY, config.IQAIR_BASE_URL)
@@ -35,15 +38,19 @@ def run_app():
     #print(f'\n\nNearest city based on supplied coordinates (lat=43.85, lon=18.38):')
     #print(json.dumps(nearest_city_by_coords, indent=4))
 
-    city_data = client.get_city_data('Sarajevo','Federation of B&H','Bosnia Herzegovina')
-    print(f'\n\nAir quality data for Sarajevo:')
+    city = 'Sarajevo'
+    state = 'Federation of B&H'
+    country = 'Bosnia Herzegovina'
+    city_data = client.get_city_data(city, state, country)
+    print(f'\n\nAir quality data for {city}:')
     #print(json.dumps(city_data, indent=4))
     print(city_data)
 
     # Initialize storage (using CSV as an example)
-    storage = CSVStorage()
+    raw_storage = JSONStorage()
+    base_filename = f'{config.DATA_DIR}/{city}_raw_history'
+    raw_storage.save(city_data, base_filename)
 
-    storage.save('Hello')  # Replace None with actual AirQualityReading object
 
 
 

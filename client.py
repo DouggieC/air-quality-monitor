@@ -1,9 +1,11 @@
 import requests
 from dataclasses import dataclass
 from datetime import datetime
+import json
 
 @dataclass
 class AirQualityReading:
+    # A dataclass to represent a single air quality reading with all relevant fields
     city: str
     state: str
     country: str
@@ -13,7 +15,6 @@ class AirQualityReading:
     main_pollutant: str     # Main pollutant contributing to the AQI
     pollutant_timestamp: datetime   # Timestamp of the pollutant measurement
     temperature: int        # Temperature in Celsius
-    min_temperature: int    # Minimum temperature in the last 24 hours
     humidity: int           # Humidity percentage
     pressure: int           # Atmospheric pressure in hPa
     wind_speed: int         # Wind speed in m/s
@@ -23,6 +24,7 @@ class AirQualityReading:
     collected_at: datetime  # Timestamp when this reading was collected from the API
 
 class AirQualityClient:
+    # A client class to interact with the IQAir Air Quality API
     def __init__(self, api_key, base_url):
         self.api_key = api_key
         self.base_url = base_url
@@ -104,29 +106,62 @@ class AirQualityClient:
         url = f'{self.base_url}city'
         response = requests.get(url, params=params)
         data = response.json()
+        print(f'API response for city data (JSON dump): {json.dumps(data, indent=2)}')
         reading = self._parse_air_quality_data(data.get('data', {}))
+        print(f'Parsed AirQualityReading: {reading}')
         return reading
     
+    def _parse_timestamp(self, ts):
+        # Force timestamps into datetime objects
+        if ts is None:
+            return datetime.fromtimestamp(0)
+
+        # Already a number
+        if isinstance(ts, (int, float)):
+            return datetime.fromtimestamp(ts)
+
+        # Try to coerce numeric strings first
+        if isinstance(ts, str):
+            if ts.isdigit():
+                return datetime.fromtimestamp(int(ts))
+            try:
+                # ISO format, e.g. "2023-03-02T12:34:56.000Z" or similar
+                return datetime.fromisoformat(ts.replace('Z', '+00:00'))
+            except ValueError:
+                pass
+
+        # Fallback
+        return datetime.fromtimestamp(0)
+
     def _parse_air_quality_data(self, data) -> AirQualityReading:
         # Parses the raw API response data into an AirQualityReading object
-        return AirQualityReading(
+        print(f'Parsing air quality data: {data}')
+        print(f'city:\t{data.get("city")}')
+        print(f'current:\t{data.get("current")}')
+        print(f'aqi:\t{data.get("current", {}).get("pollution", {}).get("aqius")}')
+
+        pollution = data.get('current', {}).get('pollution', {})
+        weather = data.get('current', {}).get('weather', {})
+
+        aqr = AirQualityReading(
             city=data.get('city'),
             state=data.get('state'),
             country=data.get('country'),
             latitude=data.get('latitude'),
             longitude=data.get('longitude'),
-            aqi=data.get('aqi'),
-            main_pollutant=data.get('main_pollutant'),
-            pollutant_timestamp=datetime.fromtimestamp(data.get('pollutant_timestamp', 0)),
-            temperature=data.get('temperature'),
-            min_temperature=data.get('min_temperature'),
-            humidity=data.get('humidity'),
-            pressure=data.get('pressure'),
-            wind_speed=data.get('wind_speed'),
-            wind_direction=data.get('wind_direction'),
-            heat_index=data.get('heat_index'),
-            weather_timestamp=datetime.fromtimestamp(data.get('weather_timestamp', 0)),
+            aqi=pollution.get('aqius'),
+            main_pollutant=pollution.get('mainus'),
+            pollutant_timestamp=self._parse_timestamp(pollution.get('ts')),
+            temperature=weather.get('tp'),
+            humidity=weather.get('hu'),
+            pressure=weather.get('pr'),
+            wind_speed=weather.get('ws'),
+            wind_direction=weather.get('wd'),
+            heat_index=weather.get('hi'),
+            weather_timestamp=self._parse_timestamp(weather.get('ts')),
             collected_at=datetime.now()
         )
+        print(f'Created AirQualityReading: {aqr}')
+        return aqr
     
 
