@@ -2,6 +2,26 @@ import requests
 from dataclasses import dataclass
 from datetime import datetime
 
+@dataclass
+class AirQualityReading:
+    city: str
+    state: str
+    country: str
+    latitude: float
+    longitude: float
+    aqi: int                # AQI based on US EPA standard
+    main_pollutant: str     # Main pollutant contributing to the AQI
+    pollutant_timestamp: datetime   # Timestamp of the pollutant measurement
+    temperature: int        # Temperature in Celsius
+    min_temperature: int    # Minimum temperature in the last 24 hours
+    humidity: int           # Humidity percentage
+    pressure: int           # Atmospheric pressure in hPa
+    wind_speed: int         # Wind speed in m/s
+    wind_direction: int     # Wind direction in degrees
+    heat_index: int         # Apparent temperature in Celsius, calculated from temperature and relative humidity
+    weather_timestamp: datetime     # Timestamp of the weather measurement
+    collected_at: datetime  # Timestamp when this reading was collected from the API
+
 class AirQualityClient:
     def __init__(self, api_key, base_url):
         self.api_key = api_key
@@ -109,23 +129,4 @@ class AirQualityClient:
             collected_at=datetime.now()
         )
     
-@dataclass
-class AirQualityReading:
-    city: str
-    state: str
-    country: str
-    latitude: float
-    longitude: float
-    aqi: int                # AQI based on US EPA standard
-    main_pollutant: str     # Main pollutant contributing to the AQI
-    pollutant_timestamp: datetime   # Timestamp of the pollutant measurement
-    temperature: int        # Temperature in Celsius
-    min_temperature: int    # Minimum temperature in the last 24 hours
-    humidity: int           # Humidity percentage
-    pressure: int           # Atmospheric pressure in hPa
-    wind_speed: int         # Wind speed in m/s
-    wind_direction: int     # Wind direction in degrees
-    heat_index: int         # Apparent temperature in Celsius, calculated from temperature and relative humidity
-    weather_timestamp: datetime     # Timestamp of the weather measurement
-    collected_at: datetime  # Timestamp when this reading was collected from the API
 

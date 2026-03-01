@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from client import AirQualityReading
 import jsonlines
 import csv
 
