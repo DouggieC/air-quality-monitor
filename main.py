@@ -1,5 +1,5 @@
 from config import Config
-from client import AirQualityClient
+from client import AirQualityClient, AirQualityReading
 from storage import CSVStorage
 import json
 
@@ -37,7 +37,8 @@ def run_app():
 
     city_data = client.get_city_data('Sarajevo','Federation of B&H','Bosnia Herzegovina')
     print(f'\n\nAir quality data for Sarajevo:')
-    print(json.dumps(city_data, indent=4))
+    #print(json.dumps(city_data, indent=4))
+    print(city_data)
 
     # Initialize storage (using CSV as an example)
     storage = CSVStorage()

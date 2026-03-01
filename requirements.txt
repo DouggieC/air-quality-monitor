@@ -1,3 +1,5 @@
 dotenv
 requests
-abc
+jsonlines
+dataclasses
+datetime

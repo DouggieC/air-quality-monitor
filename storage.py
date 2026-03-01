@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-import json
+import jsonlines
 import csv
 
 class BaseStorage(ABC):
@@ -59,9 +59,9 @@ class JSONStorage(BaseStorage):
     def __init__(self):
         super().__init__()
     
-    def save(self, reading: str): #AirQualityReading):
+    def save(self, reading: AirQualityReading, base_filename):
         # Implement JSON saving logic here
-        pass
+        filename = f'{base_filename}.jsonl'
     
     def fetch(self) -> list[str]: #list[AirQualityReading]:
         # Implement JSON fetching logic here
