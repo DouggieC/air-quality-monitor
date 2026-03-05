@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
-from client import AirQualityReading
-import json
+from models import AirQualityReading
 import jsonlines
-import csv
 from datetime import datetime
 
 class BaseStorage(ABC):

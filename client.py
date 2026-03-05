@@ -1,8 +1,11 @@
 import requests
+from exceptions import *
 from dataclasses import dataclass
-from datetime import datetime
-import json
+from models import City
+#from datetime import datetime
+#import json
 
+'''
 @dataclass
 class AirQualityReading:
     # A dataclass to represent a single air quality reading with all relevant fields
@@ -22,6 +25,7 @@ class AirQualityReading:
     heat_index: int         # Apparent temperature in Celsius, calculated from temperature and relative humidity
     weather_timestamp: datetime     # Timestamp of the weather measurement
     collected_at: datetime  # Timestamp when this reading was collected from the API
+'''
 
 class AirQualityClient:
     # A client class to interact with the IQAir Air Quality API
@@ -90,24 +94,32 @@ class AirQualityClient:
         #return reading
         return data.get('data', {})
     
-    def get_city_data(self, city, state, country):
+    #def get_city_data(self, city, state, country) -> dict:
+    def get_city_data(self, city: City) -> dict:
         # Gets air quality data for the supplied city, state, and country
 
         params = {
-            'city': city,
-            'state': state,
-            'country': country,
+            'city': city.city,
+            'state': city.state,
+            'country': city.country,
             'key': self.api_key
         }
 
         url = f'{self.base_url}city'
         response = requests.get(url, params=params)
+
         data = response.json()
+        if data.get('status') != 'success':
+            raise APIError(f"API returned status '{data.get('status')}' for city {city.city}")
+
+        return response.json()
+    
+        #data = response.json()
         #print(f'API response for city data (JSON dump): {json.dumps(data, indent=2)}')
         #reading = self._parse_air_quality_data(data.get('data', {}))
         #print(f'Parsed AirQualityReading: {reading}')
         #return reading
-        return data.get('data', {})
+        
     
     '''
     def _parse_timestamp(self, ts):

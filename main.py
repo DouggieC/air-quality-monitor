@@ -1,9 +1,9 @@
 from config import Config
-from client import AirQualityClient, AirQualityReading
+from client import AirQualityClient
 from storage import JSONStorage, ParquetStorage
 from parser import ResponseParser
 from pipeline import PipelineRunner
-import json
+from models import  City
 
 def run_app():
     # Load configuration
@@ -66,8 +66,12 @@ def run_pipeline():
     raw_storage = JSONStorage()
     parsed_storage = ParquetStorage()
 
-    cities = ['Sarajevo', 'Mostar', 'Banja Luka']
-    runner = PipelineRunner(client, parser, raw_storage, parsed_storage)
+    cities = [
+        City(city='Sarajevo', state='Federation of B&H', country='Bosnia Herzegovina'),
+        City(city='Mostar', state='Federation of B&H', country='Bosnia Herzegovina'),
+        City(city='Banja Luka', state='Srpska', country='Bosnia Herzegovina'),
+    ]
+    runner = PipelineRunner(client, parser, raw_storage, parsed_storage, config.DATA_DIR)
     runner.run(cities)
 
 
