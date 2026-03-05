@@ -26,8 +26,6 @@ class ResponseParser:
     
     def parse(self, raw_data: dict) -> AirQualityReading:
 
-        print(f'Parsing raw data: {raw_data}')
-
         # Get at nested values
         pollution = raw_data.get('current', {}).get('pollution', {})
         weather = raw_data.get('current', {}).get('weather', {})
