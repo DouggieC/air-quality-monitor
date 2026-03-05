@@ -29,10 +29,6 @@ class AirQualityClient:
         self.api_key = api_key
         self.base_url = base_url
     
-    def fetch_air_quality_data(self):
-        print(f'Fetching air quality data from {self.base_url} with API key {self.api_key}')
-        # TODO Implement the actual API call logic here using requests
-    
     def get_all_countries(self):
         # Gets list of all countries with available data
 
@@ -90,8 +86,9 @@ class AirQualityClient:
         url = f'{self.base_url}nearest_city'
         response = requests.get(url, params=params)
         data = response.json()
-        reading = self._parse_air_quality_data(data.get('data', {}))
-        return reading
+        #reading = self._parse_air_quality_data(data.get('data', {}))
+        #return reading
+        return data.get('data', {})
     
     def get_city_data(self, city, state, country):
         # Gets air quality data for the supplied city, state, and country
@@ -106,11 +103,13 @@ class AirQualityClient:
         url = f'{self.base_url}city'
         response = requests.get(url, params=params)
         data = response.json()
-        print(f'API response for city data (JSON dump): {json.dumps(data, indent=2)}')
-        reading = self._parse_air_quality_data(data.get('data', {}))
-        print(f'Parsed AirQualityReading: {reading}')
-        return reading
+        #print(f'API response for city data (JSON dump): {json.dumps(data, indent=2)}')
+        #reading = self._parse_air_quality_data(data.get('data', {}))
+        #print(f'Parsed AirQualityReading: {reading}')
+        #return reading
+        return data.get('data', {})
     
+    '''
     def _parse_timestamp(self, ts):
         # Force timestamps into datetime objects
         if ts is None:
@@ -132,7 +131,9 @@ class AirQualityClient:
 
         # Fallback
         return datetime.fromtimestamp(0)
-
+    '''
+    
+    '''    
     def _parse_air_quality_data(self, data) -> AirQualityReading:
         # Parses the raw API response data into an AirQualityReading object
         print(f'Parsing air quality data: {data}')
@@ -163,5 +164,4 @@ class AirQualityClient:
         )
         print(f'Created AirQualityReading: {aqr}')
         return aqr
-    
-
+    '''

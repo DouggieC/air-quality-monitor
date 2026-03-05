@@ -1,6 +1,8 @@
 from config import Config
 from client import AirQualityClient, AirQualityReading
-from storage import JSONStorage, CSVStorage
+from storage import JSONStorage, ParquetStorage
+from parser import ResponseParser
+from pipeline import PipelineRunner
 import json
 
 def run_app():
@@ -46,17 +48,35 @@ def run_app():
     #print(json.dumps(city_data, indent=4))
     print(city_data)
 
-    # Initialize storage (using CSV as an example)
+    # Store raw JSON data to provide history
     raw_storage = JSONStorage()
     base_filename = f'{config.DATA_DIR}/{city}_raw_history'
     raw_storage.save(city_data, base_filename)
+
+def run_pipeline():
+
+    # Load the config
+    config = Config()
+
+    # Ensure data directory exists
+    config.DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+    client = AirQualityClient(config.IQAIR_API_KEY, config.IQAIR_BASE_URL)
+    parser = ResponseParser()
+    raw_storage = JSONStorage()
+    parsed_storage = ParquetStorage()
+
+    cities = ['Sarajevo', 'Mostar', 'Banja Luka']
+    runner = PipelineRunner(client, parser, raw_storage, parsed_storage)
+    runner.run(cities)
 
 
 
 
 def main():
     print('Starting Air Quality Monitor Application...')
-    run_app()
+    #run_app()
+    run_pipeline()
 
 
 if __name__ == "__main__":
