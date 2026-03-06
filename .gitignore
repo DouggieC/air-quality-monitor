@@ -208,3 +208,5 @@ __marimo__/
 
 # Output data files
 *.jsonl
+*.parquet
+data/*
