@@ -17,7 +17,7 @@ This app will download data from the IQAir API, particularly regular air quality
       pip install -r requirements.txt
       pip install -e .
    ```
-4. Go to [text](https://dashboard.iqair.com/auth/sign-in?redirectURL=%2Fpersonal%2Fapi-keys) to register for a Community API key
+4. Go to [the IQAir website](https://dashboard.iqair.com/auth/sign-in?redirectURL=%2Fpersonal%2Fapi-keys) to register for a free Community API key
 5. Copy `.env.example` to `.env` and customise as required. As a minimum, you will need to add your API key and set the correct BASE_DIR value
    
 ## Running the app
