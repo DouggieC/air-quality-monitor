@@ -1,8 +1,8 @@
-from client import AirQualityClient
-from storage import BaseStorage
-from parser import ResponseParser
-from models import City
-from exceptions import *
+from .client import AirQualityClient
+from .storage import BaseStorage
+from .parser import ResponseParser
+from .models import City
+from .exceptions import *
 from pathlib import Path
 
 class PipelineRunner:

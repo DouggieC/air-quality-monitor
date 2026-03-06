@@ -1,7 +1,7 @@
 import requests
 from exceptions import *
 from dataclasses import dataclass
-from models import City
+from .models import City
 #from datetime import datetime
 #import json
 

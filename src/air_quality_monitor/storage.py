@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from models import AirQualityReading
+from .models import AirQualityReading
 import jsonlines
 from datetime import datetime
 import pandas as pd

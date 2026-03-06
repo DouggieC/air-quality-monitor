@@ -1,5 +1,5 @@
 from datetime import datetime
-from models import AirQualityReading
+from .models import AirQualityReading
 
 class ResponseParser:
     def _parse_timestamp(self, ts):
