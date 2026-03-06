@@ -1,5 +1,5 @@
 import requests
-from exceptions import *
+from .exceptions import *
 from dataclasses import dataclass
 from .models import City
 #from datetime import datetime
