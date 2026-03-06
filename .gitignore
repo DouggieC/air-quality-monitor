@@ -210,4 +210,4 @@ __marimo__/
 *.jsonl
 *.parquet
 data/*
-data/Sarajevo_raw_history.jsonl
+
