@@ -4,9 +4,11 @@ from pathlib import Path
 import json
 from .models import City
 
-load_dotenv()  # Load environment variables from .env file
+#load_dotenv()  # Load environment variables from .env file
 
 class Config:
+    
+    load_dotenv(Path(__file__).parent.parent.parent / '.env')
     
     IQAIR_API_KEY = os.getenv('IQAIR_API_KEY')
     IQAIR_BASE_URL = os.getenv('IQAIR_BASE_URL')
