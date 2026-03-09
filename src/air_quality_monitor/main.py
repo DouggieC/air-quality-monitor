@@ -3,7 +3,7 @@ from .client import AirQualityClient
 from .storage import JSONStorage, CSVStorage
 from .parser import ResponseParser
 from .pipeline import PipelineRunner
-from .models import  City
+#from .models import City
 
 def run_app():
     # Load configuration
@@ -47,12 +47,16 @@ def run_pipeline():
     raw_storage = JSONStorage()
     parsed_storage = CSVStorage()
 
-    cities = [
+    '''cities = [
         City(city='Sarajevo', state='Federation of B&H', country='Bosnia Herzegovina'),
         City(city='London', state='England', country='United Kingdom'),
         City(city='Founex', state='Vaud', country='Switzerland'),
         City(city='Le Grand-Saconnex', state='Geneva', country='Switzerland'),
-    ]
+    ]'''
+
+    cities = Config.load_cities()
+    print(f'Cities:\t{cities}')
+
     runner = PipelineRunner(client, parser, raw_storage, parsed_storage, config.DATA_DIR)
     runner.run(cities)
 
