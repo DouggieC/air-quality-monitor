@@ -47,13 +47,6 @@ def run_pipeline():
     raw_storage = JSONStorage()
     parsed_storage = CSVStorage()
 
-    '''cities = [
-        City(city='Sarajevo', state='Federation of B&H', country='Bosnia Herzegovina'),
-        City(city='London', state='England', country='United Kingdom'),
-        City(city='Founex', state='Vaud', country='Switzerland'),
-        City(city='Le Grand-Saconnex', state='Geneva', country='Switzerland'),
-    ]'''
-
     cities = Config.load_cities()
     print(f'Cities:\t{cities}')
 
