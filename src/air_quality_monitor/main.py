@@ -61,8 +61,8 @@ def run_pipeline():
 
 def main():
     print('Starting Air Quality Monitor Application...')
-    run_app()
-    #run_pipeline()
+    #run_app()
+    run_pipeline()
 
 
 if __name__ == "__main__":
