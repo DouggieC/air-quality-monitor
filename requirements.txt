@@ -4,4 +4,3 @@ jsonlines
 dataclasses
 datetime
 pandas
-pyarrow

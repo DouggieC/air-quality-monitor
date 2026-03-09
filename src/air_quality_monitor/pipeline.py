@@ -16,7 +16,7 @@ class PipelineRunner:
         self.data_dir = data_dir
 
     def run(self, cities: list[City]) -> None:
-        # For each city, fetch data, store raw JSON, parse and store structured data
+        # For each city, fetch data, store raw JSON, parse and store structured data as
 
         for city in cities:
             try:
@@ -27,7 +27,7 @@ class PipelineRunner:
                 self.raw_storage.save(raw_data, raw_filename)
 
                 # Parse the data and store in structured parquet file
-                parsed_data = self.parser.parse(raw_data)
+                parsed_data = self.parser.parse(raw_data.get('data', {}))
                 #print(parsed_data)
                 parsed_filename = Path(f'{self.data_dir}/{city.city}_history')
                 self.parsed_storage.save(parsed_data, parsed_filename)

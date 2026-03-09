@@ -1,6 +1,6 @@
 from .config import Config
 from .client import AirQualityClient
-from .storage import JSONStorage, ParquetStorage
+from .storage import JSONStorage, CSVStorage
 from .parser import ResponseParser
 from .pipeline import PipelineRunner
 from .models import  City
@@ -39,7 +39,7 @@ def run_pipeline():
     client = AirQualityClient(config.IQAIR_API_KEY, config.IQAIR_BASE_URL)
     parser = ResponseParser()
     raw_storage = JSONStorage()
-    parsed_storage = ParquetStorage()
+    parsed_storage = CSVStorage()
 
     cities = [
         City(city='Sarajevo', state='Federation of B&H', country='Bosnia Herzegovina'),

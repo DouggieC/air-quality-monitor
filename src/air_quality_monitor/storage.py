@@ -5,7 +5,6 @@ from datetime import datetime
 import pandas as pd
 from dataclasses import asdict
 from pathlib import Path
-import pyarrow
 
 class BaseStorage(ABC):
     @abstractmethod
@@ -22,9 +21,20 @@ class CSVStorage(BaseStorage):
     def __init__(self):
         super().__init__()
     
-    def save(self, reading: str): #AirQualityReading):
+    def save(self, reading: AirQualityReading, base_filename: Path):
         # Implement CSV saving logic here
         print(f'Saving reading to CSV: {reading}')
+
+        filename = Path(f'{base_filename}.csv')
+
+        df_new = pd.DataFrame([asdict(reading)])
+
+        df_new.to_csv(
+            filename,
+            mode='a', # Append to existing file if exists
+            header=not filename.exists(),
+            index=False
+        )
     
     def fetch(self) -> list[str]: #list[AirQualityReading]:
             # Implement CSV fetching logic here
