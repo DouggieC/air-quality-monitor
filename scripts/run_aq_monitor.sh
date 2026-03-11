@@ -10,7 +10,7 @@ set -a
 source ${APP_DIR}/.env
 set +a
 
-#LOG_DIR="$APP_DIR/logs"
+LOG_DIR="/home/doug/cron/log"
 LOCKFILE="/tmp/air_quality_monitor.lock"
 
 cd $APP_DIR || exit 1
