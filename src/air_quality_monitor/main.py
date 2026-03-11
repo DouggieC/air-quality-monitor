@@ -43,18 +43,16 @@ def run_pipeline():
     # Ensure data & log directories exist
     #config.DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Start logging
-    setup_logging(log_level=Config.LOG_LEVEL, log_dir=Config.LOG_DIR)
     logger = logging.getLogger(__name__)
-    logger.info("Air Quality Monitor started")
-            
+    logger.debug('Executing run_pipeline')
+
     client = AirQualityClient(Config.IQAIR_API_KEY, Config.IQAIR_BASE_URL)
     parser = ResponseParser()
     raw_storage = JSONStorage()
     parsed_storage = CSVStorage()
 
     cities = Config.load_cities()
-    print(f'Cities:\t{cities}')
+    logger.debug(f'Cities:\t{cities}')
 
     runner = PipelineRunner(client, parser, raw_storage, parsed_storage, Config.DATA_DIR)
     runner.run(cities)
@@ -64,9 +62,15 @@ def run_pipeline():
 
 def main():
     
-    print('Starting Air Quality Monitor Application...')
+    # Start logging
+    setup_logging(log_level=Config.LOG_LEVEL, log_dir=Config.LOG_DIR)
+    logger = logging.getLogger(__name__)
+    logger.info("Air Quality Monitor started")
+            
     #run_app()
     run_pipeline()
+
+    logger.info("Air Quality Monitor finished")
 
 
 if __name__ == "__main__":

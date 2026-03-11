@@ -26,7 +26,7 @@ class PipelineRunner:
             try:
                 # Fetch raw data for city & store it as JSON
                 #print(f'Processing city: {city}')
-                self.logger.info(f'Processing city: {city}')
+                self.logger.info(f'Processing city: {city.city}')
                 raw_data = self.client.get_city_data(city)
                 self.logger.debug(f'Raw data received:\t{raw_data}')
                 raw_filename = Path(f'{self.data_dir}/{city.city}_raw_history')
