@@ -13,8 +13,10 @@ class Config:
     IQAIR_API_KEY = os.getenv('IQAIR_API_KEY')
     IQAIR_BASE_URL = os.getenv('IQAIR_BASE_URL')
     BASE_DIR = Path(os.getenv('BASE_DIR'))
-    DATA_DIR = BASE_DIR / 'data'
+    DATA_DIR = Path(BASE_DIR / 'data')
     CITY_LIST = Path(os.getenv('CITY_LIST'))
+    LOG_DIR = Path(BASE_DIR / 'log')
+    LOG_LEVEL = os.getenv('LOG_LEVEL')
 
     #print(f'Config loaded: IQAIR_API_KEY={IQAIR_API_KEY}, IQAIR_BASE_URL={IQAIR_BASE_URL}, BASE_DIR={BASE_DIR}, DATA_DIR={DATA_DIR}')
 

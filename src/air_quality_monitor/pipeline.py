@@ -1,3 +1,4 @@
+import logging
 from .client import AirQualityClient
 from .storage import BaseStorage
 from .parser import ResponseParser
@@ -9,6 +10,8 @@ class PipelineRunner:
     def __init__(self, client: AirQualityClient, parser: ResponseParser,
                  raw_storage: BaseStorage, parsed_storage: BaseStorage,
                  data_dir: Path):
+        self.logger = logging.getLogger(__name__)
+        self.logger.debug('Creating PipelineRunner object')
         self.client = client
         self.parser = parser
         self.raw_storage = raw_storage
@@ -16,22 +19,26 @@ class PipelineRunner:
         self.data_dir = data_dir
 
     def run(self, cities: list[City]) -> None:
-        # For each city, fetch data, store raw JSON, parse and store structured data as
+        # For each city, fetch data, store raw JSON, parse and store structured data as CSV
+        self.logger.debug('Executing run')
 
         for city in cities:
             try:
                 # Fetch raw data for city & store it as JSON
-                print(f'Processing city: {city}')
+                #print(f'Processing city: {city}')
+                self.logger.info(f'Processing city: {city}')
                 raw_data = self.client.get_city_data(city)
+                self.logger.debug(f'Raw data received:\t{raw_data}')
                 raw_filename = Path(f'{self.data_dir}/{city.city}_raw_history')
                 self.raw_storage.save(raw_data, raw_filename)
 
-                # Parse the data and store in structured parquet file
+                # Parse the data and store in structured CSV file
                 parsed_data = self.parser.parse(raw_data.get('data', {}))
                 #print(parsed_data)
                 parsed_filename = Path(f'{self.data_dir}/{city.city}_history')
                 self.parsed_storage.save(parsed_data, parsed_filename)
             except APIError as e:
+                self.logger.error(f"Error fetching data for city {city}: {e}")
                 print(f"Error fetching data for city {city}: {e}")
     
 

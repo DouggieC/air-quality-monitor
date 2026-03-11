@@ -1,18 +1,28 @@
+import logging
 from datetime import datetime
 from .models import AirQualityReading
 
 class ResponseParser:
+    def __init__(self):
+        self.logger = logging.getLogger(__name__)
+        self.logger.debug('Creating ResponseParser object')
+
     def _parse_timestamp(self, ts):
+        self.logger.debug('Executing _parse_timestamp')
+
         # Force timestamps into datetime objects
         if ts is None:
+            self.logger.debug('Timestamp not set')
             return datetime.fromtimestamp(0)
 
         # Already a number
         if isinstance(ts, (int, float)):
+            self.logger.debug('Timestamp is a number')
             return datetime.fromtimestamp(ts)
 
         # Try to coerce numeric strings first
         if isinstance(ts, str):
+            self.logger.debug('Timestamp is a string')
             if ts.isdigit():
                 return datetime.fromtimestamp(int(ts))
             try:
@@ -22,9 +32,11 @@ class ResponseParser:
                 pass
 
         # Fallback
+        self.logger.debug('Can\'t figure it out. Returning best effort')
         return datetime.fromtimestamp(0)
     
     def parse(self, raw_data: dict) -> AirQualityReading:
+        self.logger.debug('Executing parse')
 
         # Get at nested values
         pollution = raw_data.get('current', {}).get('pollution', {})
@@ -49,4 +61,5 @@ class ResponseParser:
             weather_timestamp=self._parse_timestamp(weather.get('ts')),
             collected_at=datetime.now()
         )
+        self.logger.debug(f'AirQualityReading:\t{aqr}')
         return aqr

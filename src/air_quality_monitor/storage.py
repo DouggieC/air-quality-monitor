@@ -5,6 +5,7 @@ from datetime import datetime
 import pandas as pd
 from dataclasses import asdict
 from pathlib import Path
+import logging
 
 class BaseStorage(ABC):
     @abstractmethod
@@ -20,21 +21,31 @@ class CSVStorage(BaseStorage):
 
     def __init__(self):
         super().__init__()
+        self.logger = logging.getLogger(__name__)
+        self.logger.debug('Creating CSVStorage object')
     
     def save(self, reading: AirQualityReading, base_filename: Path):
         # Implement CSV saving logic here
-        print(f'Saving reading to CSV: {reading}')
-
+        self.logger.info(f'Saving reading to CSV')
+        self.logger.debug(f'Data to be saved: {reading}')
+        
         filename = Path(f'{base_filename}.csv')
+        self.logger.debug(f'Saving to {filename}')
 
         df_new = pd.DataFrame([asdict(reading)])
 
-        df_new.to_csv(
-            filename,
-            mode='a', # Append to existing file if exists
-            header=not filename.exists(),
-            index=False
-        )
+        try:
+            df_new.to_csv(
+                filename,
+                mode='a', # Append to existing file if exists
+                header=not filename.exists(),
+                index=False
+            )
+        except Exception as e:
+            self.logger.error(f'Error while saving to file: {e}')
+            print(f'Error while saving to file: {e}')
+
+        
     
     def fetch(self) -> list[str]: #list[AirQualityReading]:
             # Implement CSV fetching logic here
@@ -45,6 +56,8 @@ class DBStorage(BaseStorage):
 
     def __init__(self):
         super().__init__()
+        self.logger = logging.getLogger(__name__)
+        self.logger.debug('Creating DBStorage object')
     
     def save(self, reading: str): #AirQualityReading):
         # Implement database saving logic here
@@ -59,6 +72,8 @@ class ParquetStorage(BaseStorage):
 
     def __init__(self):
         super().__init__()
+        self.logger = logging.getLogger(__name__)
+        self.logger.debug('Creating ParquetStorage object')
     
     def save(self, reading: AirQualityReading, base_filename: Path):
         
@@ -84,9 +99,12 @@ class JSONStorage(BaseStorage):
 
     def __init__(self):
         super().__init__()
+        self.logger = logging.getLogger(__name__)
+        self.logger.debug('Creating JSONStorage object')
     
     def _normalise(self, obj) -> object:
         # Normalise all data to be JSON-serialisable
+        self.logger.debug('Executing _normalise')
 
         # No problem here - just return the object as-is
         if obj is None or isinstance(obj, (str, int, float, bool)):
@@ -114,11 +132,21 @@ class JSONStorage(BaseStorage):
     
     def save(self, reading: AirQualityReading, base_filename: Path):
         
+        self.logger.info(f'Saving raw data to JSON')
+        self.logger.debug(f'Data to be saved: {reading}')
+        
         filename = Path(f'{base_filename}.jsonl')
+        self.logger.debug(f'Saving to {filename}')
+
         reading_json = self._normalise(reading)
         print(f'Saving reading to JSONL: {reading_json} (filename={filename})')
-        with jsonlines.open(filename, mode='a') as writer:
-            writer.write(reading_json)
+        try:
+            with jsonlines.open(filename, mode='a') as writer:
+                writer.write(reading_json)
+        except Exception as e:
+            self.logger.error(f'Error while saving to file: {e}')
+            print(f'Error while saving to file: {e}')
+
 
         
     
