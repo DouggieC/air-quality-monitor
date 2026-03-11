@@ -4,7 +4,7 @@ from .models import AirQualityReading
 
 class ResponseParser:
     def __init__(self):
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug('Creating ResponseParser object')
 
     def _parse_timestamp(self, ts):

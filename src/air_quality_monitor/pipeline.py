@@ -10,7 +10,7 @@ class PipelineRunner:
     def __init__(self, client: AirQualityClient, parser: ResponseParser,
                  raw_storage: BaseStorage, parsed_storage: BaseStorage,
                  data_dir: Path):
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug('Creating PipelineRunner object')
         self.client = client
         self.parser = parser

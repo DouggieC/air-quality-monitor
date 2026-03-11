@@ -21,7 +21,7 @@ class CSVStorage(BaseStorage):
 
     def __init__(self):
         super().__init__()
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug('Creating CSVStorage object')
     
     def save(self, reading: AirQualityReading, base_filename: Path):
@@ -56,7 +56,7 @@ class DBStorage(BaseStorage):
 
     def __init__(self):
         super().__init__()
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug('Creating DBStorage object')
     
     def save(self, reading: str): #AirQualityReading):
@@ -72,7 +72,7 @@ class ParquetStorage(BaseStorage):
 
     def __init__(self):
         super().__init__()
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug('Creating ParquetStorage object')
     
     def save(self, reading: AirQualityReading, base_filename: Path):
@@ -99,7 +99,7 @@ class JSONStorage(BaseStorage):
 
     def __init__(self):
         super().__init__()
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug('Creating JSONStorage object')
     
     def _normalise(self, obj) -> object:

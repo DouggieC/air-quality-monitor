@@ -4,14 +4,17 @@ from pathlib import Path
 import json
 from .models import City
 
-#load_dotenv(Path(__file__).parent.parent.parent / '.env')  # Load environment variables from .env file
-
 class Config:
         
     load_dotenv() # Load environment variables from .env file
 
     IQAIR_API_KEY = os.getenv('IQAIR_API_KEY')
     IQAIR_BASE_URL = os.getenv('IQAIR_BASE_URL')
+
+    OWM_API_KEY = os.getenv('OWM_API_KEY')
+    OWM_ONECALL_BASE_URL = os.getenv('OWM_ONECALL_BASE_URL')
+    OWM_GEO_BASE_URL = os.getenv('OWM_GEO_BASE_URL')
+
     BASE_DIR = Path(os.getenv('BASE_DIR'))
     DATA_DIR = Path(BASE_DIR / 'data')
     CITY_LIST = Path(os.getenv('CITY_LIST'))
