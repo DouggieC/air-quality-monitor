@@ -1,5 +1,5 @@
 import logging
-from .client import AirQualityClient
+from .client import AirQualityClient, WeatherClient
 from .storage import BaseStorage
 from .parser import ResponseParser
 from .models import City
@@ -7,12 +7,12 @@ from .exceptions import *
 from pathlib import Path
 
 class PipelineRunner:
-    def __init__(self, client: AirQualityClient, parser: ResponseParser,
+    def __init__(self, aqc: AirQualityClient, wc: WeatherClient, parser: ResponseParser,
                  raw_storage: BaseStorage, parsed_storage: BaseStorage,
                  data_dir: Path):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug('Creating PipelineRunner object')
-        self.client = client
+        self.aqc = aqc
         self.parser = parser
         self.raw_storage = raw_storage
         self.parsed_storage = parsed_storage
@@ -27,18 +27,17 @@ class PipelineRunner:
                 # Fetch raw data for city & store it as JSON
                 #print(f'Processing city: {city}')
                 self.logger.info(f'Processing city: {city.city}')
-                raw_data = self.client.get_city_data(city)
+                raw_data = self.aqc.get_city_data(city)
                 self.logger.debug(f'Raw data received:\t{raw_data}')
                 raw_filename = Path(f'{self.data_dir}/{city.city}_raw_history')
                 self.raw_storage.save(raw_data, raw_filename)
 
                 # Parse the data and store in structured CSV file
-                parsed_data = self.parser.parse(raw_data.get('data', {}))
-                #print(parsed_data)
+                parsed_data = self.parser.parse_air_quality_data(raw_data.get('data', {}))
                 parsed_filename = Path(f'{self.data_dir}/{city.city}_history')
                 self.parsed_storage.save(parsed_data, parsed_filename)
             except APIError as e:
-                self.logger.error(f"Error fetching data for city {city}: {e}")
+                self.logger.error(f"Error fetching air quality data for city {city}: {e}")
                 print(f"Error fetching data for city {city}: {e}")
     
 

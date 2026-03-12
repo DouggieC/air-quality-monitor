@@ -35,7 +35,7 @@ class ResponseParser:
         self.logger.debug('Can\'t figure it out. Returning best effort')
         return datetime.fromtimestamp(0)
     
-    def parse(self, raw_data: dict) -> AirQualityReading:
+    def parse_air_quality_data(self, raw_data: dict) -> AirQualityReading:
         self.logger.debug('Executing parse')
 
         # Get at nested values

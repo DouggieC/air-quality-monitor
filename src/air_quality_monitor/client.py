@@ -137,8 +137,9 @@ class WeatherClient:
         self.logger.debug(f'URL:\t{url}')
         response = requests.get(url, params=params)
 
-        data = response.json()
+        data = response.json()[0]
         self.logger.debug(f'Data received:\t{data}')
+
         if data.get('code') is not None or data.get('cod') is not None:
             raise APIError(f"OWM API failed for city {city.city}: error code {data.get('code')}: {data.get('message')}")
         
@@ -163,13 +164,13 @@ class WeatherClient:
         data = response.json()
         self.logger.debug(f'Data received:\t{data}')
 
-        
+
         if data.get('code') is not None or data.get('cod') is not None:
             raise APIError(f"OWM API failed for coords [{lat},{lon}]: error code {data.get('code')}: {data.get('message')}")
         
         return data
     
-    def get_current_weather(self, lat=None, lon=None, city: City | None = None):
+    def get_current_weather(self, *, lat=None, lon=None, city: City | None = None):
         # Get the full current weather data for the specified location
         self.logger.debug('Executing get_current_weather')
 
@@ -182,14 +183,16 @@ class WeatherClient:
             raise ValueError('Only one of city or lat/lon must be specified')
         
         if city:
+            self.logger.debug(f'City name supplied. Getting coordinates...')
             coords = self.get_coordinates(city)
             lat = coords.get('lat')
             lon = coords.get('lon')
+            self.logger.debug(f'Coords for {city}:\t[{lat},{lon}]')
         
         params = {
             'lat': lat,
             'lon': lon,
-            'exclude': 'minutely, hourly, daily, alerts',
+            'exclude': 'minutely,hourly,daily,alerts',
             'units': 'metric',
             'appid': self.api_key
         }
