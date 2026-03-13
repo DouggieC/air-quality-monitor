@@ -29,13 +29,15 @@ class PipelineRunner:
                 self.logger.info(f'Processing city: {city.city}')
                 raw_data = self.client.get_city_data(city)
                 self.logger.debug(f'Raw data received:\t{raw_data}')
-                raw_filename = Path(f'{self.data_dir}/{city.city}_raw_history')
+                #raw_filename = Path(f'{self.data_dir}/{city.city}_raw_history')
+                raw_filename = Path(f'{self.data_dir}/raw_history')
                 self.raw_storage.save(raw_data, raw_filename)
 
                 # Parse the data and store in structured CSV file
                 parsed_data = self.parser.parse(raw_data.get('data', {}))
                 #print(parsed_data)
-                parsed_filename = Path(f'{self.data_dir}/{city.city}_history')
+                #parsed_filename = Path(f'{self.data_dir}/{city.city}_history')
+                parsed_filename = Path(f'{self.data_dir}/history')
                 self.parsed_storage.save(parsed_data, parsed_filename)
             except APIError as e:
                 self.logger.error(f"Error fetching data for city {city}: {e}")
