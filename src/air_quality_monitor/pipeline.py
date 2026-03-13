@@ -37,7 +37,7 @@ class PipelineRunner:
                 parsed_data = self.parser.parse(raw_data.get('data', {}))
                 #print(parsed_data)
                 #parsed_filename = Path(f'{self.data_dir}/{city.city}_history')
-                parsed_filename = Path(f'{self.data_dir}/history')
+                parsed_filename = Path(f'{self.data_dir}/aqi_history')
                 self.parsed_storage.save(parsed_data, parsed_filename)
             except APIError as e:
                 self.logger.error(f"Error fetching data for city {city}: {e}")
