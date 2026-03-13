@@ -21,11 +21,12 @@ class CSVStorage(BaseStorage):
 
     def __init__(self):
         super().__init__()
-        self.logger = logging.getLogger(__name__)
-        self.logger.debug('Creating CSVStorage object')
-    
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.debug(f'Creating object')
+
     def save(self, reading: AirQualityReading, base_filename: Path):
         # Implement CSV saving logic here
+        self.logger.debug('Executing method')
         self.logger.info(f'Saving reading to CSV')
         self.logger.debug(f'Data to be saved: {reading}')
         
@@ -43,7 +44,6 @@ class CSVStorage(BaseStorage):
             )
         except Exception as e:
             self.logger.error(f'Error while saving to file: {e}')
-            print(f'Error while saving to file: {e}')
 
         
     
@@ -56,9 +56,9 @@ class DBStorage(BaseStorage):
 
     def __init__(self):
         super().__init__()
-        self.logger = logging.getLogger(__name__)
-        self.logger.debug('Creating DBStorage object')
-    
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.debug(f'Creating object')
+
     def save(self, reading: str): #AirQualityReading):
         # Implement database saving logic here
         pass
@@ -72,11 +72,12 @@ class ParquetStorage(BaseStorage):
 
     def __init__(self):
         super().__init__()
-        self.logger = logging.getLogger(__name__)
-        self.logger.debug('Creating ParquetStorage object')
-    
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.debug(f'Creating object')
+
     def save(self, reading: AirQualityReading, base_filename: Path):
-        
+        self.logger.debug('Executing method')
+
         filename = Path(f'{base_filename}.parquet')
 
         # Can't append to a parquet file. Need to read to DF, combine with new and write back
@@ -99,9 +100,9 @@ class JSONStorage(BaseStorage):
 
     def __init__(self):
         super().__init__()
-        self.logger = logging.getLogger(__name__)
-        self.logger.debug('Creating JSONStorage object')
-    
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.debug(f'Creating object')
+
     def _normalise(self, obj) -> object:
         # Normalise all data to be JSON-serialisable
         self.logger.debug('Executing _normalise')
@@ -137,6 +138,7 @@ class JSONStorage(BaseStorage):
     
     def save(self, reading: AirQualityReading, base_filename: Path):
         
+        self.logger.debug('Executing method')
         self.logger.info(f'Saving raw data to JSON')
         self.logger.debug(f'Data to be saved: {reading}')
         
