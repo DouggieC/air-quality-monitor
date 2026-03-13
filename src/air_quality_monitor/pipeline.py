@@ -30,7 +30,7 @@ class PipelineRunner:
                 raw_data = self.client.get_city_data(city)
                 self.logger.debug(f'Raw data received:\t{raw_data}')
                 #raw_filename = Path(f'{self.data_dir}/{city.city}_raw_history')
-                raw_filename = Path(f'{self.data_dir}/raw_history')
+                raw_filename = Path(f'{self.data_dir}/aqi_raw_history')
                 self.raw_storage.save(raw_data, raw_filename)
 
                 # Parse the data and store in structured CSV file
