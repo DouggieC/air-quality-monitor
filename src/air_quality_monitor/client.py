@@ -10,14 +10,13 @@ class AirQualityClient:
     # A client class to interact with the IQAir Air Quality API
     def __init__(self, api_key, base_url):
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.logger.debug('Creating AirQualityClient object')
+        self.logger.debug(f'Creating object')
         self.api_key = api_key
         self.base_url = base_url
         
     def get_all_countries(self):
         # Gets list of all countries with available data
-
-        self.logger.debug("Executing get_all_countries")
+        self.logger.debug('Executing method')
 
         params = {
             'key': self.api_key
@@ -34,8 +33,7 @@ class AirQualityClient:
     
     def get_all_states(self, country):
         # Gets list of all states for the supplied country
-
-        self.logger.debug('Executing get_all_states')
+        self.logger.debug('Executing method')
 
         params = {
             'country': country,
@@ -53,7 +51,7 @@ class AirQualityClient:
     
     def get_all_cities(self, country, state):
         # Gets list of all cities for the supplied country and state
-        self.logger.debug('Executing get_all_cities')
+        self.logger.debug('Executing method')
 
         params = {
             'country': country,
@@ -73,7 +71,7 @@ class AirQualityClient:
     def get_nearest_city(self, lat=None, lon=None):
         # Gets nearest city based on supplied latitude and longitude, 
         # or based on IP geolocation if lat/lon not supplied
-        self.logger.debug('Executing get_nearest_city')
+        self.logger.debug('Executing method')
 
         params = {
             'lat': lat,
@@ -92,7 +90,7 @@ class AirQualityClient:
     
     def get_city_data(self, city: City) -> dict:
         # Gets air quality data for the supplied city, state, and country
-        self.logger.debug('Executing get_city_data')
+        self.logger.debug('Executing method')
 
         params = {
             'city': city.city,
@@ -117,14 +115,14 @@ class WeatherClient:
     # A client to interact with the OpenWeatherMap API
     def __init__(self, api_key, owm_oc_base_url, owm_geo_base_url):
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.logger.debug('Creating WeatherClient object')
+        self.logger.debug(f'Creating object')
         self.api_key = api_key
         self.oc_base_url = owm_oc_base_url
         self.geo_base_url = owm_geo_base_url
     
     def get_coordinates(self, city: City, limit=None) -> dict:
         # Get the latitude and longitude of a city
-        self.logger.debug('Executing get_coordinates')
+        self.logger.debug('Executing method')
 
         params = {
             'q': city.city,
@@ -147,7 +145,7 @@ class WeatherClient:
     
     def get_location(self, lat, lon, limit=None):
         # Get the closest named location to the given coordinates
-        self.logger.debug('Executing get_location')
+        self.logger.debug('Executing method')
 
         params = {
             'lat': lat,
@@ -172,7 +170,7 @@ class WeatherClient:
     
     def get_current_weather(self, *, lat=None, lon=None, city: City | None = None):
         # Get the full current weather data for the specified location
-        self.logger.debug('Executing get_current_weather')
+        self.logger.debug('Executing method')
 
         # Method requires either lat & lon or city
         if city is None and lat is None and lon is None:

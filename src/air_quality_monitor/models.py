@@ -25,14 +25,20 @@ class AirQualityReading:
 @dataclass
 class WeatherReading:
     # A dataclass to represent a single weather reading
+    city: str
+    state: str
+    country: str
     latitude: float
     longitude: float
     timezone: str
     timezone_offset: int    # Offset from UTC (seconds)
-    dt: int             # Current time (UTC timestamp)
-    sunrise: int        # Sunrise time (UTC timestamp)
-    sunset: int         # Sunset time (UTC timestamp)
-    temp: float         # Temperature (C; default response is K but API calls request metric)
+    dt_utc: int         # Observation time (UTC timestamp)
+    dt_local: int       # Observation time (Local timestamp)
+    sunrise_utc: int    # Sunrise time (UTC timestamp)
+    sunrise_local: int  # Sunrise time (Local timestamp)
+    sunset_utc: int     # Sunset time (UTC timestamp)
+    sunset_local: int   # Sunset time (Local timestamp)
+    temperature: float  # Temperature (C; default response is K but API calls request metric)
     feels_like: float   # Perceived temperature (C)
     pressure: int       # Atmospheric pressure at MSL, hPa
     humidity: int       # Humidity (%)
@@ -41,13 +47,11 @@ class WeatherReading:
     clouds: int         # Cloudiness (%)
     visibility: int     # Average visibility (m, max 10km)
     wind_speed: float   # Wind speed (m/s)
-    wind_deg: int       # Wind direction (degrees)
+    wind_direction: int # Wind direction (degrees)
     wind_gust: int      # Wind gust speed (m/s)
     rain: int           # Rainfall (mm/h)
     snow: int           # Snowfall (mm/h)
-    weather_id: int     # Weather condition ID. See https://openweathermap.org/weather-conditions#Weather-Condition-Codes-2
-    weather_main: str   # Group of weather parameters
-    weather_desc: str   # Weather condition within the group
+    conditions: str     # JSON string contining a list of weather condition dicts
 
 @dataclass
 class WeatherAlert:

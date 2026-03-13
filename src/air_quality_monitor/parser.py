@@ -1,14 +1,15 @@
 import logging
+import json
 from datetime import datetime
-from .models import AirQualityReading
+from .models import AirQualityReading, WeatherReading, City
 
 class ResponseParser:
     def __init__(self):
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.logger.debug('Creating ResponseParser object')
+        self.logger.debug(f'Creating object')
 
     def _parse_timestamp(self, ts):
-        self.logger.debug('Executing _parse_timestamp')
+        self.logger.debug('Executing method')
 
         # Force timestamps into datetime objects
         if ts is None:
@@ -35,8 +36,9 @@ class ResponseParser:
         self.logger.debug('Can\'t figure it out. Returning best effort')
         return datetime.fromtimestamp(0)
     
-    def parse_air_quality_data(self, raw_data: dict) -> AirQualityReading:
-        self.logger.debug('Executing parse')
+class AirQualityParser(ResponseParser):
+    def parse(self, raw_data: dict, city: City) -> AirQualityReading:
+        self.logger.debug('Executing method')
 
         # Get at nested values
         pollution = raw_data.get('current', {}).get('pollution', {})
@@ -44,9 +46,9 @@ class ResponseParser:
 
         
         aqr = AirQualityReading(
-            city=raw_data.get('city'),
-            state=raw_data.get('state'),
-            country=raw_data.get('country'),
+            city=city.city,
+            state=city.state,
+            country=city.country,
             latitude=raw_data.get('latitude'),
             longitude=raw_data.get('longitude'),
             aqi=pollution.get('aqius'),
@@ -63,3 +65,49 @@ class ResponseParser:
         )
         self.logger.debug(f'AirQualityReading:\t{aqr}')
         return aqr
+
+class WeatherParser(ResponseParser):
+    def parse(self, raw_data: dict, city: City) -> WeatherReading:
+        self.logger.debug('Executing method')
+
+        # Get at nested values
+        # TODO Weather ('conditions') is a list of dicts. Needs further parsing
+        current = raw_data.get('current', {})
+        timezone_offset=raw_data.get('timezone_offset')
+
+        wr = WeatherReading(
+            city=city.city,
+            state=city.state,
+            country=city.country,
+            latitude=raw_data.get('lat'),
+            longitude=raw_data.get('lon'),
+            timezone=raw_data.get('timezone'),
+            timezone_offset=timezone_offset,
+            dt_utc=self._parse_timestamp(current.get('dt')),
+            dt_local=self._parse_timestamp(current.get('dt') + timezone_offset),
+            sunrise_utc=self._parse_timestamp(current.get('sunrise')),
+            sunrise_local=self._parse_timestamp(current.get('sunrise') + timezone_offset),
+            sunset_utc=self._parse_timestamp(current.get('sunset')),
+            sunset_local=self._parse_timestamp(current.get('sunset') + timezone_offset),
+            temperature=current.get('temp'),
+            feels_like=current.get('feels_like'),
+            pressure=current.get('pressure'),
+            humidity=current.get('humidity'),
+            dew_point=current.get('dew_point'),
+            uvi=current.get('uvi'),
+            clouds=current.get('clouds'),
+            visibility=current.get('visibility'),
+            wind_speed=current.get('wind_speed'),
+            wind_gust=current.get('wind_gust'),
+            wind_direction=current.get('wind_direction'),
+            rain=current.get('rain').get('1h'),
+            snow=current.get('snow').get('1h'),
+            conditions=json.dumps(current.get('weather, []'))
+        )
+        self.logger.debug(f'WeatherReading:\t{wr}')
+        return wr
+    
+
+
+
+

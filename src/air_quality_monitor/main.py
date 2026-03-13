@@ -2,14 +2,14 @@ import logging
 from .config import Config
 from .client import AirQualityClient, WeatherClient
 from .storage import JSONStorage, CSVStorage
-from .parser import ResponseParser
+from .parser import AirQualityParser, WeatherParser
 from .pipeline import PipelineRunner
 from .logger import setup_logging
 
 def run_app():
     logger = logging.getLogger(__name__)
-    logger.debug('Executing run_app')
-    
+    logger.debug('Executing method')
+
     # Ensure data directory exists
     Config.DATA_DIR.mkdir(parents=True, exist_ok=True)
     
@@ -62,17 +62,18 @@ def run_app():
 def run_pipeline():
 
     logger = logging.getLogger(__name__)
-    logger.debug('Executing run_pipeline')
+    logger.debug('Executing method')
 
     aqc = AirQualityClient(Config.IQAIR_API_KEY, Config.IQAIR_BASE_URL)
-    parser = ResponseParser()
+    aq_parser = AirQualityParser()
+    we_parser = WeatherParser()
     raw_storage = JSONStorage()
     parsed_storage = CSVStorage()
 
     cities = Config.load_cities()
     logger.debug(f'Cities:\t{cities}')
 
-    runner = PipelineRunner(aqc, parser, raw_storage, parsed_storage, Config.DATA_DIR)
+    runner = PipelineRunner(aqc, aq_parser, we_parser, raw_storage, parsed_storage, Config.DATA_DIR)
     runner.run(cities)
 
 
