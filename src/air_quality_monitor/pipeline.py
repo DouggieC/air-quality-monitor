@@ -37,7 +37,8 @@ class PipelineRunner:
 
                 # Parse the data and store in structured CSV file
                 parsed_aq_data = self.aq_parser.parse(raw_data.get('data', {}), city)
-                parsed_aq_filename = Path(f'{self.data_dir}/{city.city}_aqi_history')
+                #parsed_aq_filename = Path(f'{self.data_dir}/{city.city}_aqi_history')
+                parsed_aq_filename = Path(f'{self.data_dir}/aqi_history')
                 self.parsed_storage.save(parsed_aq_data, parsed_aq_filename)
             except APIError as e:
                 self.logger.error(f"Error fetching air quality data for city {city}: {e}")
