@@ -69,11 +69,14 @@ class AirQualityParser(ResponseParser):
 class WeatherParser(ResponseParser):
     def parse(self, raw_data: dict, city: City) -> WeatherReading:
         self.logger.debug('Executing method')
+        self.logger.debug(f'Raw data received:\t{raw_data}')
 
         # Get at nested values
         # TODO Weather ('conditions') is a list of dicts. Needs further parsing
         current = raw_data.get('current', {})
+        self.logger.debug(f'Current data:\t{current}')
         timezone_offset=raw_data.get('timezone_offset')
+        self.logger.debug(f'TZ offset:\t{timezone_offset}')
 
         wr = WeatherReading(
             city=city.city,
@@ -99,10 +102,11 @@ class WeatherParser(ResponseParser):
             visibility=current.get('visibility'),
             wind_speed=current.get('wind_speed'),
             wind_gust=current.get('wind_gust'),
-            wind_direction=current.get('wind_direction'),
-            rain=current.get('rain').get('1h'),
-            snow=current.get('snow').get('1h'),
-            conditions=json.dumps(current.get('weather, []'))
+            wind_direction=current.get('wind_deg'),
+            rain=current.get('rain', {}).get('1h'),
+            snow=current.get('snow', {}).get('1h'),
+            conditions=json.dumps(current.get('weather', []))
+            #conditions=current.get('weather', [])
         )
         self.logger.debug(f'WeatherReading:\t{wr}')
         return wr
