@@ -65,6 +65,7 @@ def run_pipeline():
     logger.debug('Executing method')
 
     aqc = AirQualityClient(Config.IQAIR_API_KEY, Config.IQAIR_BASE_URL)
+    wc = WeatherClient(Config.OWM_API_KEY, Config.OWM_ONECALL_BASE_URL, Config.OWM_GEO_BASE_URL)
     aq_parser = AirQualityParser()
     we_parser = WeatherParser()
     raw_storage = JSONStorage()
@@ -73,7 +74,7 @@ def run_pipeline():
     cities = Config.load_cities()
     logger.debug(f'Cities:\t{cities}')
 
-    runner = PipelineRunner(aqc, aq_parser, we_parser, raw_storage, parsed_storage, Config.DATA_DIR)
+    runner = PipelineRunner(aqc, wc, aq_parser, we_parser, raw_storage, parsed_storage, Config.DATA_DIR)
     runner.run(cities)
 
 
