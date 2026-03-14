@@ -96,8 +96,8 @@ def main():
     logger.debug(f'LOG_DIR:\t{Config.LOG_DIR}')
     logger.debug(f'LOG_LEVEL:\t{Config.LOG_LEVEL}')
             
-    run_app()
-    #run_pipeline()
+    #run_app()
+    run_pipeline()
 
     logger.info("Air Quality Monitor finished")
 
