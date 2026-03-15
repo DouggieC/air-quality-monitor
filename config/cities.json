@@ -1,6 +1,14 @@
 [
-    {"city": "Sarajevo", "state": "Federation of B&H", "country": "Bosnia Herzegovina"},
-    {"city": "London", "state": "England", "country": "United Kingdom"},
-    {"city": "Founex", "state": "Vaud", "country": "Switzerland"},
-    {"city": "Le Grand-Saconnex", "state": "Geneva", "country": "Switzerland"}
+    {"city": "Sarajevo", "state": "Federation of B&H", "country": "Bosnia Herzegovina", "latitude": 43.8519774, "longitude": 18.3866868},
+    {"city": "London", "state": "England", "country": "United Kingdom", "latitude": 51.5073219, "longitude": -0.1276474},
+    {"city": "Berlin", "state": "Berlin", "country": "Germany", "latitude": 52.5170365, "longitude": 13.3888599},
+    {"city": "Moscow", "state": "Moscow", "country": "Russia", "latitude": 55.7504461, "longitude": 37.6174943},
+    {"city": "Bern", "state": "Bern", "country": "Switzerland", "latitude": 46.9484742, "longitude": 7.4521749},
+    {"city": "Ankara", "state": "Ankara", "country": "Turkey", "latitude": 39.9207886, "longitude": 32.8540482},
+    {"city": "Athens", "state": "Central Greece", "country": "Greece", "latitude": 37.9839412, "longitude": 23.7283052},
+    {"city": "Rome", "state": "Latium", "country": "Italy", "latitude": 41.8933203, "longitude": 12.4829321},
+    {"city": "Madrid", "state": "Madrid", "country": "Spain", "latitude": 40.4167047, "longitude": -3.7035825},
+    {"city": "Warsaw", "state": "Mazovia", "country": "Poland", "latitude": 52.2319581, "longitude": 21.0067249},
+    {"city": "Amsterdam", "state": "North Holland", "country": "Netherlands", "latitude": 52.3727598, "longitude": 4.8936041},
+    {"city": "Stockholm", "state": "Stockholm", "country": "Sweden", "latitude": 59.3251172, "longitude": 18.0710935}
 ]

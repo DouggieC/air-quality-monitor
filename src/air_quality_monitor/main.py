@@ -23,15 +23,19 @@ def run_app():
 
     for city in cities:
         #logger.debug(f'Getting coordinates for {city.city}')
-        #coord_data = wc.get_coordinates(city)
-        #lat = coord_data.get('lat')
-        #lon = coord_data.get('lon')
+        coord_data = wc.get_coordinates(city)
+        lat = coord_data.get('lat')
+        lon = coord_data.get('lon')
         logger.debug(f'Getting weather data for {city}')
-        weather_data = wc.get_current_weather(city=city)
+        #weather_data = wc.get_current_weather(city=city)
         #logger.debug(f'Getting AQI data for {city.city}')
         #aqi_data = aqc.get_city_data(city)
+
+        print(f'{city}:\t{lat}, {lon}')
+    
+    exit()
         
-        '''
+    '''
         # Get weather for Sarajevo by coords
         print('Getting weather data')
         weather_data = wc.get_current_weather(43.8563, 18.4131)
