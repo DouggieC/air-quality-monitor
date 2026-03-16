@@ -31,13 +31,11 @@ class PipelineRunner:
                 self.logger.info(f'Processing AQI data for city: {city.city}')
                 raw_data = self.aqc.get_city_data(city)
                 self.logger.debug(f'Raw data received:\t{raw_data}')
-                #raw_filename = Path(f'{self.data_dir}/{city.city}_raw_history')
                 raw_filename = Path(f'{self.data_dir}/aqi_raw_history')
                 self.raw_storage.save(raw_data, raw_filename)
 
                 # Parse the data and store in structured CSV file
                 parsed_aq_data = self.aq_parser.parse(raw_data.get('data', {}), city)
-                #parsed_aq_filename = Path(f'{self.data_dir}/{city.city}_aqi_history')
                 parsed_aq_filename = Path(f'{self.data_dir}/aqi_history')
                 self.parsed_storage.save(parsed_aq_data, parsed_aq_filename)
             except APIError as e:
@@ -47,15 +45,14 @@ class PipelineRunner:
             try:
                 # Fetch raw OWM data for city & store it as JSON
                 self.logger.info(f'Processing OWM data for city: {city.city}')
-                raw_data = self.wc.get_current_weather(city=city)
+                #raw_data = self.wc.get_current_weather(city=city)
+                raw_data = self.wc.get_current_weather(lat=city.latitude, lon=city.longitude)
                 self.logger.debug(f'Raw data received:\t{raw_data}')
-                #raw_filename = Path(f'{self.data_dir}/{city.city}_raw_history')
                 raw_filename = Path(f'{self.data_dir}/we_raw_history')
                 self.raw_storage.save(raw_data, raw_filename)
 
                 # Parse the data and store in structured CSV file
                 parsed_aq_data = self.we_parser.parse(raw_data, city)
-                #parsed_aq_filename = Path(f'{self.data_dir}/{city.city}_aqi_history')
                 parsed_aq_filename = Path(f'{self.data_dir}/we_history')
                 self.parsed_storage.save(parsed_aq_data, parsed_aq_filename)
             except APIError as e:
