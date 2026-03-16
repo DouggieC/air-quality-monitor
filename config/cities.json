@@ -5,7 +5,7 @@
     {"city": "Moscow", "state": "Moscow", "country": "Russia", "latitude": 55.7504461, "longitude": 37.6174943},
     {"city": "Bern", "state": "Bern", "country": "Switzerland", "latitude": 46.9484742, "longitude": 7.4521749},
     {"city": "Ankara", "state": "Ankara", "country": "Turkey", "latitude": 39.9207886, "longitude": 32.8540482},
-    {"city": "Athens", "state": "Central Greece", "country": "Greece", "latitude": 37.9839412, "longitude": 23.7283052},
+    {"city": "Athens", "state": "Attica", "country": "Greece", "latitude": 37.9839412, "longitude": 23.7283052},
     {"city": "Rome", "state": "Latium", "country": "Italy", "latitude": 41.8933203, "longitude": 12.4829321},
     {"city": "Madrid", "state": "Madrid", "country": "Spain", "latitude": 40.4167047, "longitude": -3.7035825},
     {"city": "Warsaw", "state": "Mazovia", "country": "Poland", "latitude": 52.2319581, "longitude": 21.0067249},
