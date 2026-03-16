@@ -1,4 +1,5 @@
 import logging
+from  time import sleep
 from .client import AirQualityClient, WeatherClient
 from .storage import BaseStorage
 from .parser import ResponseParser
@@ -25,6 +26,9 @@ class PipelineRunner:
         # For each city, fetch data, store raw JSON, parse and store structured data as CSV
         self.logger.debug('Executing method')
 
+        # Can only make 5 IQAir API calls/min. Count when 5 have been made
+        call_count = 0
+
         for city in cities:
             try:
                 # Fetch raw AQI data for city & store it as JSON
@@ -39,8 +43,7 @@ class PipelineRunner:
                 parsed_aq_filename = Path(f'{self.data_dir}/aqi_history')
                 self.parsed_storage.save(parsed_aq_data, parsed_aq_filename)
             except APIError as e:
-                self.logger.error(f"Error fetching air quality data for city {city}: {e}")
-                print(f"Error fetching data for city {city}: {e}")
+                self.logger.error(f"Error fetching air quality data for {city.city}: {e}")
 
             try:
                 # Fetch raw OWM data for city & store it as JSON
@@ -56,8 +59,18 @@ class PipelineRunner:
                 parsed_aq_filename = Path(f'{self.data_dir}/we_history')
                 self.parsed_storage.save(parsed_aq_data, parsed_aq_filename)
             except APIError as e:
-                self.logger.error(f"Error fetching weather data for city {city}: {e}")
-                print(f"Error fetching data for city {city}: {e}")
+                self.logger.error(f"Error fetching weather data for {city.city}: {e}")
+            
+            call_count += 1
+            if call_count == 5:
+                # Reset the counter to start the next batch of 5 calls and sleep
+                call_count = 0
+                self.logger.info('Max calls/min reached. Sleeping for 1 minute...')
+                sleep(60)
+            
+
+
+                
 
     
 

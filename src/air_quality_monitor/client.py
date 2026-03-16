@@ -107,7 +107,7 @@ class AirQualityClient:
         data = response.json()
         self.logger.debug(f'Data received:\t{data}')
         if data.get('status') != 'success':
-            raise APIError(f"IQAir API returned status '{data.get('status')}' for city {city.city}")
+            raise APIError(f"Status {data.get('status')}: {data.get('data', {}).get('message')}")
 
         return response.json()
 
@@ -203,7 +203,7 @@ class WeatherClient:
         data = response.json()
         self.logger.debug(f'Data received:\t{data}')
         if data.get('code') is not None or data.get('cod') is not None:
-            raise APIError(f"OWM API failed for coords [{lat},{lon}]: error code {data.get('code')}: {data.get('message')}")
+            raise APIError(f"Error code {data.get('code')}: {data.get('message')}")
         
         return data 
 
