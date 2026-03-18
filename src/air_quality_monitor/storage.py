@@ -136,7 +136,7 @@ class JSONStorage(BaseStorage):
         # Run out of ideas. Just convert to string and cross fingers
         return str(obj)
     
-    def save(self, reading: AirQualityReading, base_filename: Path):
+    def save(self, reading: dict, base_filename: Path):
         
         self.logger.debug('Executing method')
         self.logger.info(f'Saving raw data to JSON')
