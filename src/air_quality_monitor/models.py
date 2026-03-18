@@ -51,7 +51,9 @@ class WeatherReading:
     wind_gust: int      # Wind gust speed (m/s)
     rain: int           # Rainfall (mm/h)
     snow: int           # Snowfall (mm/h)
-    conditions: str     # JSON string contining a list of weather condition dicts
+    weather_main: str   # The main weather (clouds, rain, sun, etc.)
+    weather_desc: str   # The weather description ('few clouds', etc.)
+    #conditions: str     # JSON string containing a list of weather condition dicts
 
 @dataclass
 class WeatherAlert:
