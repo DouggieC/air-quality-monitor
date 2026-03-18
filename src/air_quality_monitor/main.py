@@ -1,4 +1,5 @@
 import logging
+from time import sleep
 from .config import Config
 from .client import AirQualityClient, WeatherClient
 from .storage import JSONStorage, CSVStorage
@@ -17,6 +18,23 @@ def run_app():
     aqc = AirQualityClient(Config.IQAIR_API_KEY, Config.IQAIR_BASE_URL)
     wc = WeatherClient(Config.OWM_API_KEY, Config.OWM_ONECALL_BASE_URL, Config.OWM_GEO_BASE_URL)
 
+    data = aqc.get_all_states('Greece')
+    print(type(data))
+
+    count = 0
+    #for entry in data['data']:
+    for entry in data:
+        cities = aqc.get_all_cities('Greece', entry['state'])
+        print(f'{entry['state']}: {cities}')
+        if 'Athens' in cities:
+            break
+        count += 1
+        if count == 5:
+            print ('Sleeping...')
+            sleep(60)
+
+    exit()
+    
     # Get coordinates for Sarajevo
     cities = Config.load_cities()
     logger.debug(f'Cities:\t{cities}')
@@ -97,10 +115,13 @@ def main():
     logger.debug(f'OWM_ONECALL_BASE_URL:\t{Config.OWM_ONECALL_BASE_URL}')
     logger.debug(f'OWM_GEO_BASE_URL:\t{Config.OWM_GEO_BASE_URL}')
     logger.debug(f'BASE_DIR:\t{Config.BASE_DIR}')
-    logger.debug(f'CITY_LIST:\t{Config.CITY_LIST}')
+    logger.debug(f'DATA_DIR:\t{Config.DATA_DIR}')
+    logger.debug(f'CONFIG_DIR:\t{Config.CONFIG_DIR}')
     logger.debug(f'LOG_DIR:\t{Config.LOG_DIR}')
     logger.debug(f'LOG_LEVEL:\t{Config.LOG_LEVEL}')
-            
+    logger.debug(f'CITY_LIST:\t{Config.CITY_LIST}')
+    logger.debug(f'IS_PRODUCTION:\t{Config.IS_PRODUCTION}')
+
     #run_app()
     run_pipeline()
 
