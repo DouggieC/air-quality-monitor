@@ -53,7 +53,7 @@ class WeatherReading:
     snow: int           # Snowfall (mm/h)
     weather_main: str   # The main weather (clouds, rain, sun, etc.)
     weather_desc: str   # The weather description ('few clouds', etc.)
-    #conditions: str     # JSON string containing a list of weather condition dicts
+    collected_at: datetime  # Timestamp when this reading was collected from the API
 
 @dataclass
 class WeatherAlert:

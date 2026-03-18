@@ -105,8 +105,8 @@ class WeatherParser(ResponseParser):
             rain=current.get('rain', {}).get('1h'),
             snow=current.get('snow', {}).get('1h'),
             weather_main=current.get('weather', [{}])[0].get('main'),
-            weather_desc=current.get('weather', [{}])[0].get('description')
-            #conditions=json.dumps(current.get('weather', []))
+            weather_desc=current.get('weather', [{}])[0].get('description'),
+            collected_at=datetime.now()
         )
         self.logger.debug(f'WeatherReading:\t{wr}')
         return wr
