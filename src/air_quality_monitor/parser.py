@@ -9,7 +9,7 @@ class ResponseParser:
         self.logger.debug(f'Creating object')
 
     def _parse_timestamp(self, ts):
-        self.logger.debug('Executing method')
+        self.logger.debug(f'Executing method (ts={ts})')
 
         # Force timestamps into datetime objects
         if ts is None:
