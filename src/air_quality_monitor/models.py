@@ -31,37 +31,37 @@ class WeatherReading:
     latitude: float
     longitude: float
     timezone: str
-    timezone_offset: int    # Offset from UTC (seconds)
-    dt_utc: int         # Observation time (UTC timestamp)
-    dt_local: int       # Observation time (Local timestamp)
-    sunrise_utc: int    # Sunrise time (UTC timestamp)
-    sunrise_local: int  # Sunrise time (Local timestamp)
-    sunset_utc: int     # Sunset time (UTC timestamp)
-    sunset_local: int   # Sunset time (Local timestamp)
-    temperature: float  # Temperature (C; default response is K but API calls request metric)
-    feels_like: float   # Perceived temperature (C)
-    pressure: int       # Atmospheric pressure at MSL, hPa
-    humidity: int       # Humidity (%)
-    dew_point: float    # Air temp at which water condenses and dew can form (C)
-    uvi: float          # UV index
-    clouds: int         # Cloudiness (%)
-    visibility: int     # Average visibility (m, max 10km)
-    wind_speed: float   # Wind speed (m/s)
-    wind_direction: int # Wind direction (degrees)
-    wind_gust: int      # Wind gust speed (m/s)
-    rain: int           # Rainfall (mm/h)
-    snow: int           # Snowfall (mm/h)
-    weather_main: str   # The main weather (clouds, rain, sun, etc.)
-    weather_desc: str   # The weather description ('few clouds', etc.)
-    collected_at: datetime  # Timestamp when this reading was collected from the API
+    timezone_offset: int     # Offset from UTC (seconds)
+    dt_utc: datetime         # Observation time (UTC timestamp)
+    dt_local: datetime       # Observation time (Local timestamp)
+    sunrise_utc: datetime    # Sunrise time (UTC timestamp)
+    sunrise_local: datetime  # Sunrise time (Local timestamp)
+    sunset_utc: datetime     # Sunset time (UTC timestamp)
+    sunset_local: datetime   # Sunset time (Local timestamp)
+    temperature: float       # Temperature (C; default response is K but API calls request metric)
+    feels_like: float        # Perceived temperature (C)
+    pressure: int            # Atmospheric pressure at MSL, hPa
+    humidity: int            # Humidity (%)
+    dew_point: float         # Air temp at which water condenses and dew can form (C)
+    uvi: float               # UV index
+    clouds: int              # Cloudiness (%)
+    visibility: int          # Average visibility (m, max 10km)
+    wind_speed: float        # Wind speed (m/s)
+    wind_direction: int      # Wind direction (degrees)
+    wind_gust: float         # Wind gust speed (m/s)
+    rain: float              # Rainfall (mm/h)
+    snow: float              # Snowfall (mm/h)
+    weather_main: str        # The main weather (clouds, rain, sun, etc.)
+    weather_desc: str        # The weather description ('few clouds', etc.)
+    collected_at: datetime   # Timestamp when this reading was collected from the API
 
 @dataclass
 class WeatherAlert:
     # A dataclass to represent a severe weather alert
     sender_name: str    # Alert source. See https://openweathermap.org/api/one-call-3?collection=one_call_api_3.0#listsource
     event: str          # Alert event name
-    start: int          # Start date & time (UTC timestamp)
-    end: int            # End date & time (UTC timestamp)
+    start: datetime     # Start date & time (UTC timestamp)
+    end: datetime       # End date & time (UTC timestamp)
     description: str    # Description of the alert
     tags: list[str]     # Type of severe weather
 

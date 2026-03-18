@@ -1,20 +1,26 @@
-from abc import ABC, abstractmethod
-from .models import AirQualityReading
-import jsonlines
-from datetime import datetime
-import pandas as pd
-from dataclasses import asdict
-from pathlib import Path
 import logging
+from abc import ABC, abstractmethod
+from dataclasses import asdict
+from datetime import datetime
+from pathlib import Path
+
+import jsonlines
+import pandas as pd
+from sqlalchemy.orm import Session
+
+from .db_models import Base, DBCity
+from .models import AirQualityReading, City
+
 
 class BaseStorage(ABC):
     @abstractmethod
-    def save(self, reading: str): #AirQualityReading):
+    def save(self, reading: str):  # AirQualityReading):
         pass
 
     @abstractmethod
-    def fetch(self) -> list[str]: #list[AirQualityReading]:
+    def fetch(self) -> list[str]:  # list[AirQualityReading]:
         pass
+
 
 class CSVStorage(BaseStorage):
     # A class to handle CSV file storage
@@ -22,50 +28,90 @@ class CSVStorage(BaseStorage):
     def __init__(self):
         super().__init__()
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.logger.debug(f'Creating object')
+        self.logger.debug("Creating object")
 
     def save(self, reading: AirQualityReading, base_filename: Path):
         # Implement CSV saving logic here
-        self.logger.debug('Executing method')
-        self.logger.info(f'Saving reading to CSV')
-        self.logger.debug(f'Data to be saved: {reading}')
-        
-        filename = Path(f'{base_filename}.csv')
-        self.logger.debug(f'Saving to {filename}')
+        self.logger.debug("Executing method")
+        self.logger.info("Saving reading to CSV")
+        self.logger.debug(f"Data to be saved: {reading}")
+
+        filename = Path(f"{base_filename}.csv")
+        self.logger.debug(f"Saving to {filename}")
 
         df_new = pd.DataFrame([asdict(reading)])
 
         try:
             df_new.to_csv(
                 filename,
-                mode='a', # Append to existing file if exists
+                mode="a",  # Append to existing file if exists
                 header=not filename.exists(),
-                index=False
+                index=False,
             )
         except Exception as e:
-            self.logger.error(f'Error while saving to file: {e}')
+            self.logger.error(f"Error while saving to file: {e}")
 
-        
-    
-    def fetch(self) -> list[str]: #list[AirQualityReading]:
-            # Implement CSV fetching logic here
+    def fetch(self) -> list[str]:  # list[AirQualityReading]:
+        # Implement CSV fetching logic here
         pass
+
 
 class DBStorage(BaseStorage):
     # A class to handle database storage
 
-    def __init__(self):
+    def __init__(self, engine, model_class):
         super().__init__()
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.logger.debug(f'Creating object')
+        self.logger.debug("Creating object")
 
-    def save(self, reading: str): #AirQualityReading):
-        # Implement database saving logic here
-        pass
-    
-    def fetch(self) -> list[str]: #list[AirQualityReading]:
+        self.engine = engine
+        self.model_class = model_class
+
+        if not issubclass(model_class, Base):
+            raise ValueError(f"{model_class} is not a valid SQLAlchemy model")
+
+    def save(self, reading, city: City):
+        # Write to the table
+        self.logger.debug("Executing method")
+        self.logger.info("Saving reading to CSV")
+
+        reading_dict = asdict(reading)
+        self.logger.debug(f"Data to be saved (dictionary): {reading_dict}")
+
+        try:
+            with Session(self.engine) as session:
+                # Get city_id from the database
+                db_city = (
+                    session.query(DBCity)
+                    .filter_by(city=city.city, state=city.state, country=city.country)
+                    .first()
+                )
+                if db_city is None:
+                    raise ValueError(f"{city.city} not found in database")
+                self.logger.debug(f"Found city:\t{db_city}")
+
+                # Remove city data...
+                for key in ["city", "state", "country", "latitude", "longitude"]:
+                    reading_dict.pop(key)
+
+                # ...and add the city_id FK instead
+                reading_dict["city_id"] = db_city.id
+                self.logger.debug(f"reading as dict with city_id: {reading_dict}")
+
+                # Create the DB class
+                data = self.model_class(**reading_dict)
+
+                # and add it to the session
+                session.add(data)
+                session.commit()
+        except Exception as e:
+            self.logger.error(f"Error saving to database: {e}")
+            raise
+
+    def fetch(self) -> list[str]:  # list[AirQualityReading]:
         # Implement database fetching logic here
         pass
+
 
 class ParquetStorage(BaseStorage):
     # A class to handle Parquet file storage
@@ -73,12 +119,12 @@ class ParquetStorage(BaseStorage):
     def __init__(self):
         super().__init__()
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.logger.debug(f'Creating object')
+        self.logger.debug("Creating object")
 
     def save(self, reading: AirQualityReading, base_filename: Path):
-        self.logger.debug('Executing method')
+        self.logger.debug("Executing method")
 
-        filename = Path(f'{base_filename}.parquet')
+        filename = Path(f"{base_filename}.parquet")
 
         # Can't append to a parquet file. Need to read to DF, combine with new and write back
         df_new = pd.DataFrame([asdict(reading)])
@@ -88,12 +134,13 @@ class ParquetStorage(BaseStorage):
             df_combined = pd.concat([df_history, df_new], ignore_index=True)
         else:
             df_combined = df_new
-        
+
         df_combined.to_parquet(filename, index=False)
-    
+
     def fetch(self) -> list[AirQualityReading]:
         # Implement Parquet fetching logic here
         pass
+
 
 class JSONStorage(BaseStorage):
     # A class to handle JSON file storage
@@ -101,63 +148,60 @@ class JSONStorage(BaseStorage):
     def __init__(self):
         super().__init__()
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.logger.debug(f'Creating object')
+        self.logger.debug("Creating object")
 
     def _normalise(self, obj) -> object:
         # Normalise all data to be JSON-serialisable
-        self.logger.debug('Executing _normalise')
+        self.logger.debug("Executing _normalise")
 
         # No problem here - just return the object as-is
         if obj is None or isinstance(obj, (str, int, float, bool)):
-            self.logger.debug('Basic type or empty')
+            self.logger.debug("Basic type or empty")
             return obj
-        
+
         # Convert datetime to ISO format string
         if isinstance(obj, datetime):
-            self.logger.debug('Datetime object. Converting to ISO format')
+            self.logger.debug("Datetime object. Converting to ISO format")
             return obj.isoformat()
-        
+
         # Recurse to convert all values in dicts
         if isinstance(obj, dict):
-            self.logger.debug('Dict. Recursing for all values')
+            self.logger.debug("Dict. Recursing for all values")
             return {k: self._normalise(v) for k, v in obj.items()}
-        
+
         # Same for lists, tuples & sets
         if isinstance(obj, (list, tuple, set)):
-            self.logger.debug('List, tuple or set. Recursing for all values')
+            self.logger.debug("List, tuple or set. Recursing for all values")
             return [self._normalise(v) for v in obj]
-        
+
         # dataclasses: convert to dict & recurse
-        from dataclasses import is_dataclass, asdict
+        from dataclasses import asdict, is_dataclass
+
         if is_dataclass(obj):
-            self.logger.debug('Dataclass. Recursing for all values')
+            self.logger.debug("Dataclass. Recursing for all values")
             return self._normalise(asdict(obj))
-        
+
         # Run out of ideas. Just convert to string and cross fingers
         return str(obj)
-    
+
     def save(self, reading: dict, base_filename: Path):
-        
-        self.logger.debug('Executing method')
-        self.logger.info(f'Saving raw data to JSON')
-        self.logger.debug(f'Data to be saved: {reading}')
-        
-        filename = Path(f'{base_filename}.jsonl')
-        self.logger.debug(f'Saving to {filename}')
+
+        self.logger.debug("Executing method")
+        self.logger.info("Saving raw data to JSON")
+        self.logger.debug(f"Data to be saved: {reading}")
+
+        filename = Path(f"{base_filename}.jsonl")
+        self.logger.debug(f"Saving to {filename}")
 
         reading_json = self._normalise(reading)
-        
+
         try:
-            with jsonlines.open(filename, mode='a') as writer:
+            with jsonlines.open(filename, mode="a") as writer:
                 writer.write(reading_json)
         except Exception as e:
-            self.logger.error(f'Error while saving to file: {e}')
-            print(f'Error while saving to file: {e}')
+            self.logger.error(f"Error while saving to file: {e}")
+            print(f"Error while saving to file: {e}")
 
-
-        
-    
-    def fetch(self) -> list[str]: #list[AirQualityReading]:
+    def fetch(self) -> list[str]:  # list[AirQualityReading]:
         # Implement JSON fetching logic here
         pass
-

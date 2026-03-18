@@ -4,3 +4,4 @@ jsonlines
 dataclasses
 datetime
 pandas
+sqlalchemy
