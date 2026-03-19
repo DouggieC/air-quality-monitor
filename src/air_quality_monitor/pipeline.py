@@ -17,8 +17,9 @@ class PipelineRunner:
         aq_parser: ResponseParser,
         we_parser: ResponseParser,
         raw_storage: BaseStorage,
-        parsed_storage: BaseStorage,
         data_dir: Path,
+        aq_csv_storage=None,
+        we_csv_storage=None,
         aq_db_storage=None,
         we_db_storage=None,
     ):
@@ -29,8 +30,9 @@ class PipelineRunner:
         self.aq_parser = aq_parser
         self.we_parser = we_parser
         self.raw_storage = raw_storage
-        self.parsed_storage = parsed_storage
         self.data_dir = data_dir
+        self.aq_csv_storage = aq_csv_storage
+        self.we_csv_storage = we_csv_storage
         self.aq_db_storage = aq_db_storage
         self.we_db_storage = we_db_storage
 
@@ -50,10 +52,14 @@ class PipelineRunner:
                 raw_filename = Path(f"{self.data_dir}/aqi_raw_history")
                 self.raw_storage.save(raw_data, raw_filename)
 
-                # Parse the data and store in structured CSV file
+                # Parse the data ready for storage
                 parsed_aq_data = self.aq_parser.parse(raw_data.get("data", {}), city)
-                parsed_aq_filename = Path(f"{self.data_dir}/aqi_history")
-                self.parsed_storage.save(parsed_aq_data, parsed_aq_filename)
+                # parsed_aq_filename = Path(f"{self.data_dir}/aqi_history")
+                # self.parsed_storage.save(parsed_aq_data, parsed_aq_filename)
+
+                # Write to the CSV file if in use
+                if self.aq_csv_storage:
+                    self.aq_csv_storage.save(parsed_aq_data)
 
                 # Write to the DB if in use
                 if self.aq_db_storage:

@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 from time import sleep
 
 from .client import AirQualityClient, WeatherClient
@@ -6,6 +7,7 @@ from .config import Config
 from .database import Database
 from .db_models import DBAirQualityReading, DBWeatherReading
 from .logger import setup_logging
+from .models import AirQualityReading, WeatherReading
 from .parser import AirQualityParser, WeatherParser
 from .pipeline import PipelineRunner
 from .storage import CSVStorage, DBStorage, JSONStorage
@@ -101,12 +103,25 @@ def run_pipeline():
     aq_parser = AirQualityParser()
     we_parser = WeatherParser()
 
-    raw_storage = JSONStorage()
-    parsed_storage = CSVStorage()
-
+    # Load the list of cities
     cities = Config.load_cities()
     logger.debug(f"Cities:\t{cities}")
 
+    # Always store the raw JSON data
+    raw_storage = JSONStorage()
+
+    # If we're storing data in CSV files, set them now.
+    if Config.USE_CSV:
+        aq_filepath = Path(Config.DATA_DIR / "aqi_history.csv")
+        aq_csv_storage = CSVStorage(aq_filepath, AirQualityReading)
+
+        we_filepath = Path(Config.DATA_DIR / "we_history.csv")
+        we_csv_storage = CSVStorage(we_filepath, WeatherReading)
+    else:
+        aq_csv_storage = None
+        we_csv_storage = None
+
+    # If we're storing data in a DB, set them now.
     if Config.USE_DB:
         db = Database(Config.get_db_url())
         db.sync_cities(cities)
@@ -124,8 +139,9 @@ def run_pipeline():
         aq_parser,
         we_parser,
         raw_storage,
-        parsed_storage,
         Config.DATA_DIR,
+        aq_csv_storage=aq_csv_storage,
+        we_csv_storage=we_csv_storage,
         aq_db_storage=aq_db_storage,
         we_db_storage=we_db_storage,
     )

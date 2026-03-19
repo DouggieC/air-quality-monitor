@@ -9,7 +9,7 @@ import pandas as pd
 from sqlalchemy.orm import Session
 
 from .db_models import Base, DBCity
-from .models import AirQualityReading, City
+from .models import City, Reading
 
 
 class BaseStorage(ABC):
@@ -25,35 +25,44 @@ class BaseStorage(ABC):
 class CSVStorage(BaseStorage):
     # A class to handle CSV file storage
 
-    def __init__(self):
+    def __init__(self, filepath: Path, model_class):
         super().__init__()
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug("Creating object")
 
-    def save(self, reading: AirQualityReading, base_filename: Path):
+        self.filepath = filepath
+        self.model_class = model_class
+
+        if not issubclass(self.model_class, Reading):
+            raise ValueError(f"{self.model_class} is not a valid Reading model")
+
+    def save(self, reading: Reading) -> None:
         # Implement CSV saving logic here
         self.logger.debug("Executing method")
         self.logger.info("Saving reading to CSV")
         self.logger.debug(f"Data to be saved: {reading}")
-
-        filename = Path(f"{base_filename}.csv")
-        self.logger.debug(f"Saving to {filename}")
+        self.logger.debug(f"Saving to {self.filepath}")
 
         df_new = pd.DataFrame([asdict(reading)])
 
         try:
             df_new.to_csv(
-                filename,
+                self.filepath,
                 mode="a",  # Append to existing file if exists
-                header=not filename.exists(),
+                header=not self.filepath.exists(),
                 index=False,
             )
         except Exception as e:
             self.logger.error(f"Error while saving to file: {e}")
 
-    def fetch(self) -> list[str]:  # list[AirQualityReading]:
-        # Implement CSV fetching logic here
-        pass
+    def read(self) -> pd.DataFrame:
+        # Read the specified CSV file into a dataframe
+        self.logger.debug("Executing method")
+        self.logger.info(f"Reading CSV file {self.filepath}")
+
+        df = pd.read_csv(self.filepath)
+        self.logger.debug(f"DataFrame created:\n{df}")
+        return df
 
 
 class DBStorage(BaseStorage):
@@ -67,8 +76,8 @@ class DBStorage(BaseStorage):
         self.engine = engine
         self.model_class = model_class
 
-        if not issubclass(model_class, Base):
-            raise ValueError(f"{model_class} is not a valid SQLAlchemy model")
+        if not issubclass(self.model_class, Base):
+            raise ValueError(f"{self.model_class} is not a valid SQLAlchemy model")
 
     def save(self, reading, city: City):
         # Write to the table
@@ -121,23 +130,10 @@ class ParquetStorage(BaseStorage):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug("Creating object")
 
-    def save(self, reading: AirQualityReading, base_filename: Path):
-        self.logger.debug("Executing method")
+    def save(self, reading: Reading, base_filename: Path):
+        pass
 
-        filename = Path(f"{base_filename}.parquet")
-
-        # Can't append to a parquet file. Need to read to DF, combine with new and write back
-        df_new = pd.DataFrame([asdict(reading)])
-
-        if filename.exists():
-            df_history = pd.read_parquet(filename)
-            df_combined = pd.concat([df_history, df_new], ignore_index=True)
-        else:
-            df_combined = df_new
-
-        df_combined.to_parquet(filename, index=False)
-
-    def fetch(self) -> list[AirQualityReading]:
+    def fetch(self) -> list[Reading]:
         # Implement Parquet fetching logic here
         pass
 
