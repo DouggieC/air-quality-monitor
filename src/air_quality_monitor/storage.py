@@ -1,3 +1,4 @@
+import csv
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import asdict
@@ -59,6 +60,7 @@ class CSVStorage(FileStorage):
                 mode="a",  # Append to existing file if exists
                 header=not self.filepath.exists(),
                 index=False,
+                quoting=csv.QUOTE_NONNUMERIC,
             )
         except Exception as e:
             self.logger.error(f"Error while saving to file: {e}")
@@ -68,7 +70,16 @@ class CSVStorage(FileStorage):
         self.logger.debug("Executing method")
         self.logger.info(f"Reading CSV file {self.filepath}")
 
-        df = pd.read_csv(self.filepath)
+        if not self.filepath.exists():
+            self.logger.error(f"File not found: {self.filepath}")
+            raise FileNotFoundError(f"File not found: {self.filepath}")
+
+        try:
+            df = pd.read_csv(self.filepath)
+        except Exception as e:
+            self.logger.error(f"Error reading {self.filepath}: {e}")
+            raise
+
         self.logger.debug(f"DataFrame created:\n{df}")
         return df
 
@@ -185,9 +196,16 @@ class DBStorage(BaseStorage):
             self.logger.error(f"Error saving to database: {e}")
             raise
 
-    def read(self) -> list[str]:  # list[AirQualityReading]:
+    def read(self) -> pd.DataFrame:
         # Implement database fetching logic here
-        pass
+
+        try:
+            df = pd.read_sql_table(self.model_class.__tablename__, self.engine)
+        except Exception as e:
+            self.logger.error(f"Error reading from database: {e}")
+            raise
+
+        return df
 
 
 class ParquetStorage(FileStorage):
