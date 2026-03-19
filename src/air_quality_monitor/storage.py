@@ -6,6 +6,7 @@ from pathlib import Path
 
 import jsonlines
 import pandas as pd
+from sqlalchemy import Engine
 from sqlalchemy.orm import Session
 
 from .db_models import Base, DBCity
@@ -18,7 +19,7 @@ class BaseStorage(ABC):
         pass
 
     @abstractmethod
-    def fetch(self) -> list[str]:  # list[AirQualityReading]:
+    def read(self) -> list[str]:  # list[AirQualityReading]:
         pass
 
 
@@ -65,10 +66,78 @@ class CSVStorage(BaseStorage):
         return df
 
 
+class JSONStorage(BaseStorage):
+    # A class to handle JSON file storage
+
+    def __init__(self, filepath: Path, model_class):
+        super().__init__()
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.debug("Creating object")
+
+        self.filepath = filepath
+        self.model_class = model_class
+
+        if not issubclass(self.model_class, Reading):
+            raise ValueError(f"{self.model_class} is not a valid Reading model")
+
+    def _normalise(self, obj) -> object:
+        # Normalise all data to be JSON-serialisable
+        self.logger.debug("Executing _normalise")
+
+        # No problem here - just return the object as-is
+        if obj is None or isinstance(obj, (str, int, float, bool)):
+            self.logger.debug("Basic type or empty")
+            return obj
+
+        # Convert datetime to ISO format string
+        if isinstance(obj, datetime):
+            self.logger.debug("Datetime object. Converting to ISO format")
+            return obj.isoformat()
+
+        # Recurse to convert all values in dicts
+        if isinstance(obj, dict):
+            self.logger.debug("Dict. Recursing for all values")
+            return {k: self._normalise(v) for k, v in obj.items()}
+
+        # Same for lists, tuples & sets
+        if isinstance(obj, (list, tuple, set)):
+            self.logger.debug("List, tuple or set. Recursing for all values")
+            return [self._normalise(v) for v in obj]
+
+        # dataclasses: convert to dict & recurse
+        from dataclasses import asdict, is_dataclass
+
+        if is_dataclass(obj):
+            self.logger.debug("Dataclass. Recursing for all values")
+            return self._normalise(asdict(obj))
+
+        # Run out of ideas. Just convert to string and cross fingers
+        return str(obj)
+
+    def save(self, reading: Reading) -> None:
+
+        self.logger.debug("Executing method")
+        self.logger.info("Saving raw data to JSON")
+        self.logger.debug(f"Data to be saved: {reading}")
+        self.logger.debug(f"Saving to {self.filepath}")
+
+        reading_json = self._normalise(reading)
+
+        try:
+            with jsonlines.open(self.filepath, mode="a") as writer:
+                writer.write(reading_json)
+        except Exception as e:
+            self.logger.error(f"Error while saving to file: {e}")
+
+    def read(self) -> list[str]:  # list[AirQualityReading]:
+        # Implement JSON fetching logic here
+        pass
+
+
 class DBStorage(BaseStorage):
     # A class to handle database storage
 
-    def __init__(self, engine, model_class):
+    def __init__(self, engine: Engine, model_class):
         super().__init__()
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug("Creating object")
@@ -117,87 +186,30 @@ class DBStorage(BaseStorage):
             self.logger.error(f"Error saving to database: {e}")
             raise
 
-    def fetch(self) -> list[str]:  # list[AirQualityReading]:
+    def read(self) -> list[str]:  # list[AirQualityReading]:
         # Implement database fetching logic here
         pass
 
 
 class ParquetStorage(BaseStorage):
     # A class to handle Parquet file storage
+    # NOT YET IMPLEMENTED
 
-    def __init__(self):
+    def __init__(self, filepath: Path, model_class):
         super().__init__()
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug("Creating object")
+        self.not_implemented_msg = (
+            "Parquet storage is not yet implemented. Use CSV or DB instead."
+        )
+        self.logger.warning(self.not_implemented_msg)
+
+        self.filepath = filepath
+        self.model_class = model_class
 
     def save(self, reading: Reading, base_filename: Path):
-        pass
+        raise NotImplementedError(self.not_implemented_msg)
 
     def fetch(self) -> list[Reading]:
         # Implement Parquet fetching logic here
-        pass
-
-
-class JSONStorage(BaseStorage):
-    # A class to handle JSON file storage
-
-    def __init__(self):
-        super().__init__()
-        self.logger = logging.getLogger(self.__class__.__name__)
-        self.logger.debug("Creating object")
-
-    def _normalise(self, obj) -> object:
-        # Normalise all data to be JSON-serialisable
-        self.logger.debug("Executing _normalise")
-
-        # No problem here - just return the object as-is
-        if obj is None or isinstance(obj, (str, int, float, bool)):
-            self.logger.debug("Basic type or empty")
-            return obj
-
-        # Convert datetime to ISO format string
-        if isinstance(obj, datetime):
-            self.logger.debug("Datetime object. Converting to ISO format")
-            return obj.isoformat()
-
-        # Recurse to convert all values in dicts
-        if isinstance(obj, dict):
-            self.logger.debug("Dict. Recursing for all values")
-            return {k: self._normalise(v) for k, v in obj.items()}
-
-        # Same for lists, tuples & sets
-        if isinstance(obj, (list, tuple, set)):
-            self.logger.debug("List, tuple or set. Recursing for all values")
-            return [self._normalise(v) for v in obj]
-
-        # dataclasses: convert to dict & recurse
-        from dataclasses import asdict, is_dataclass
-
-        if is_dataclass(obj):
-            self.logger.debug("Dataclass. Recursing for all values")
-            return self._normalise(asdict(obj))
-
-        # Run out of ideas. Just convert to string and cross fingers
-        return str(obj)
-
-    def save(self, reading: dict, base_filename: Path):
-
-        self.logger.debug("Executing method")
-        self.logger.info("Saving raw data to JSON")
-        self.logger.debug(f"Data to be saved: {reading}")
-
-        filename = Path(f"{base_filename}.jsonl")
-        self.logger.debug(f"Saving to {filename}")
-
-        reading_json = self._normalise(reading)
-
-        try:
-            with jsonlines.open(filename, mode="a") as writer:
-                writer.write(reading_json)
-        except Exception as e:
-            self.logger.error(f"Error while saving to file: {e}")
-            print(f"Error while saving to file: {e}")
-
-    def fetch(self) -> list[str]:  # list[AirQualityReading]:
-        # Implement JSON fetching logic here
-        pass
+        raise NotImplementedError(self.not_implemented_msg)

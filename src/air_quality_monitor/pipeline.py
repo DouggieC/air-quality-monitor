@@ -6,7 +6,7 @@ from .client import AirQualityClient, WeatherClient
 from .exceptions import APIError
 from .models import City
 from .parser import ResponseParser
-from .storage import BaseStorage
+from .storage import JSONStorage
 
 
 class PipelineRunner:
@@ -16,8 +16,9 @@ class PipelineRunner:
         wc: WeatherClient,
         aq_parser: ResponseParser,
         we_parser: ResponseParser,
-        raw_storage: BaseStorage,
         data_dir: Path,
+        aq_json_storage: JSONStorage,
+        we_json_storage: JSONStorage,
         aq_csv_storage=None,
         we_csv_storage=None,
         aq_db_storage=None,
@@ -29,15 +30,16 @@ class PipelineRunner:
         self.wc = wc
         self.aq_parser = aq_parser
         self.we_parser = we_parser
-        self.raw_storage = raw_storage
         self.data_dir = data_dir
+        self.aq_json_storage = aq_json_storage
+        self.we_json_storage = we_json_storage
         self.aq_csv_storage = aq_csv_storage
         self.we_csv_storage = we_csv_storage
         self.aq_db_storage = aq_db_storage
         self.we_db_storage = we_db_storage
 
     def run(self, cities: list[City]) -> None:
-        # For each city, fetch data, store raw JSON, parse and store structured data as CSV
+        # For each city, fetch data, store raw JSON, parse and store structured data as CSV and/or DB
         self.logger.debug("Executing method")
 
         # Can only make 5 IQAir API calls/min. Count when 5 have been made
@@ -47,13 +49,14 @@ class PipelineRunner:
             try:
                 # Fetch raw AQI data for city & store it as JSON
                 self.logger.info(f"Processing AQI data for city: {city.city}")
-                raw_data = self.aqc.get_city_data(city)
-                self.logger.debug(f"Raw data received:\t{raw_data}")
-                raw_filename = Path(f"{self.data_dir}/aqi_raw_history")
-                self.raw_storage.save(raw_data, raw_filename)
+                raw_aq_data = self.aqc.get_city_data(city)
+                self.logger.debug(f"Raw data received:\t{raw_aq_data}")
+                # raw_filename = Path(f"{self.data_dir}/aqi_raw_history")
+                # self.raw_storage.save(raw_aq_data, raw_filename)
+                self.aq_json_storage.save(raw_aq_data)
 
                 # Parse the data ready for storage
-                parsed_aq_data = self.aq_parser.parse(raw_data.get("data", {}), city)
+                parsed_aq_data = self.aq_parser.parse(raw_aq_data.get("data", {}), city)
                 # parsed_aq_filename = Path(f"{self.data_dir}/aqi_history")
                 # self.parsed_storage.save(parsed_aq_data, parsed_aq_filename)
 
@@ -74,21 +77,26 @@ class PipelineRunner:
                 # Fetch raw OWM data for city & store it as JSON
                 self.logger.info(f"Processing OWM data for city: {city.city}")
                 # raw_data = self.wc.get_current_weather(city=city)
-                raw_data = self.wc.get_current_weather(
+                raw_we_data = self.wc.get_current_weather(
                     lat=city.latitude, lon=city.longitude
                 )
-                self.logger.debug(f"Raw data received:\t{raw_data}")
-                raw_filename = Path(f"{self.data_dir}/we_raw_history")
-                self.raw_storage.save(raw_data, raw_filename)
+                self.logger.debug(f"Raw data received:\t{raw_we_data}")
+                # raw_filename = Path(f"{self.data_dir}/we_raw_history")
+                # self.raw_storage.save(raw_we_data, raw_filename)
+                self.we_json_storage.save(raw_we_data)
 
                 # Parse the data and store in structured CSV file
-                parsed_aq_data = self.we_parser.parse(raw_data, city)
-                parsed_aq_filename = Path(f"{self.data_dir}/we_history")
-                self.parsed_storage.save(parsed_aq_data, parsed_aq_filename)
+                parsed_we_data = self.we_parser.parse(raw_we_data, city)
+                # parsed_aq_filename = Path(f"{self.data_dir}/we_history")
+                # self.parsed_storage.save(parsed_aq_data, parsed_aq_filename)
+
+                # Write to the CSV file if in use
+                if self.we_csv_storage:
+                    self.we_csv_storage.save(parsed_we_data)
 
                 # Write to the DB if in use
                 if self.we_db_storage:
-                    self.we_db_storage.save(parsed_aq_data, city)
+                    self.we_db_storage.save(parsed_we_data, city)
 
             except APIError as e:
                 self.logger.error(f"Error fetching weather data for {city.city}: {e}")
