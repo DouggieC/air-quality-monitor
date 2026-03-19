@@ -14,28 +14,35 @@ from .models import City, Reading
 
 
 class BaseStorage(ABC):
-    @abstractmethod
-    def save(self, reading: str):  # AirQualityReading):
-        pass
-
-    @abstractmethod
-    def read(self) -> list[str]:  # list[AirQualityReading]:
-        pass
-
-
-class CSVStorage(BaseStorage):
-    # A class to handle CSV file storage
-
-    def __init__(self, filepath: Path, model_class):
-        super().__init__()
+    def __init__(self):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug("Creating object")
+
+    @abstractmethod
+    def save(self, reading: Reading):
+        pass
+
+    @abstractmethod
+    def read(self) -> list[str]:
+        pass
+
+
+class FileStorage(BaseStorage):
+    def __init__(self, filepath: Path, model_class):
+        super().__init__()
 
         self.filepath = filepath
         self.model_class = model_class
 
         if not issubclass(self.model_class, Reading):
             raise ValueError(f"{self.model_class} is not a valid Reading model")
+
+
+class CSVStorage(FileStorage):
+    # A class to handle CSV file storage
+
+    def __init__(self, filepath: Path, model_class):
+        super().__init__(filepath, model_class)
 
     def save(self, reading: Reading) -> None:
         # Implement CSV saving logic here
@@ -66,19 +73,11 @@ class CSVStorage(BaseStorage):
         return df
 
 
-class JSONStorage(BaseStorage):
+class JSONStorage(FileStorage):
     # A class to handle JSON file storage
 
     def __init__(self, filepath: Path, model_class):
-        super().__init__()
-        self.logger = logging.getLogger(self.__class__.__name__)
-        self.logger.debug("Creating object")
-
-        self.filepath = filepath
-        self.model_class = model_class
-
-        if not issubclass(self.model_class, Reading):
-            raise ValueError(f"{self.model_class} is not a valid Reading model")
+        super().__init__(filepath, model_class)
 
     def _normalise(self, obj) -> object:
         # Normalise all data to be JSON-serialisable
@@ -139,8 +138,8 @@ class DBStorage(BaseStorage):
 
     def __init__(self, engine: Engine, model_class):
         super().__init__()
-        self.logger = logging.getLogger(self.__class__.__name__)
-        self.logger.debug("Creating object")
+        # self.logger = logging.getLogger(self.__class__.__name__)
+        # self.logger.debug("Creating object")
 
         self.engine = engine
         self.model_class = model_class
@@ -191,21 +190,20 @@ class DBStorage(BaseStorage):
         pass
 
 
-class ParquetStorage(BaseStorage):
+class ParquetStorage(FileStorage):
     # A class to handle Parquet file storage
     # NOT YET IMPLEMENTED
 
     def __init__(self, filepath: Path, model_class):
-        super().__init__()
-        self.logger = logging.getLogger(self.__class__.__name__)
-        self.logger.debug("Creating object")
+        super().__init__(filepath, model_class)
+
         self.not_implemented_msg = (
             "Parquet storage is not yet implemented. Use CSV or DB instead."
         )
         self.logger.warning(self.not_implemented_msg)
 
-        self.filepath = filepath
-        self.model_class = model_class
+        if not issubclass(self.model_class, Base):
+            raise ValueError(f"{self.model_class} is not a valid SQLAlchemy model")
 
     def save(self, reading: Reading, base_filename: Path):
         raise NotImplementedError(self.not_implemented_msg)

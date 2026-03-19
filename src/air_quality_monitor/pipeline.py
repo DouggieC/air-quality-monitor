@@ -1,5 +1,4 @@
 import logging
-from pathlib import Path
 from time import sleep
 
 from .client import AirQualityClient, WeatherClient
@@ -16,7 +15,6 @@ class PipelineRunner:
         wc: WeatherClient,
         aq_parser: ResponseParser,
         we_parser: ResponseParser,
-        data_dir: Path,
         aq_json_storage: JSONStorage,
         we_json_storage: JSONStorage,
         aq_csv_storage=None,
@@ -30,7 +28,6 @@ class PipelineRunner:
         self.wc = wc
         self.aq_parser = aq_parser
         self.we_parser = we_parser
-        self.data_dir = data_dir
         self.aq_json_storage = aq_json_storage
         self.we_json_storage = we_json_storage
         self.aq_csv_storage = aq_csv_storage
@@ -51,14 +48,10 @@ class PipelineRunner:
                 self.logger.info(f"Processing AQI data for city: {city.city}")
                 raw_aq_data = self.aqc.get_city_data(city)
                 self.logger.debug(f"Raw data received:\t{raw_aq_data}")
-                # raw_filename = Path(f"{self.data_dir}/aqi_raw_history")
-                # self.raw_storage.save(raw_aq_data, raw_filename)
                 self.aq_json_storage.save(raw_aq_data)
 
                 # Parse the data ready for storage
                 parsed_aq_data = self.aq_parser.parse(raw_aq_data.get("data", {}), city)
-                # parsed_aq_filename = Path(f"{self.data_dir}/aqi_history")
-                # self.parsed_storage.save(parsed_aq_data, parsed_aq_filename)
 
                 # Write to the CSV file if in use
                 if self.aq_csv_storage:
@@ -76,19 +69,14 @@ class PipelineRunner:
             try:
                 # Fetch raw OWM data for city & store it as JSON
                 self.logger.info(f"Processing OWM data for city: {city.city}")
-                # raw_data = self.wc.get_current_weather(city=city)
                 raw_we_data = self.wc.get_current_weather(
                     lat=city.latitude, lon=city.longitude
                 )
                 self.logger.debug(f"Raw data received:\t{raw_we_data}")
-                # raw_filename = Path(f"{self.data_dir}/we_raw_history")
-                # self.raw_storage.save(raw_we_data, raw_filename)
                 self.we_json_storage.save(raw_we_data)
 
-                # Parse the data and store in structured CSV file
+                # Parse the data ready for storage
                 parsed_we_data = self.we_parser.parse(raw_we_data, city)
-                # parsed_aq_filename = Path(f"{self.data_dir}/we_history")
-                # self.parsed_storage.save(parsed_aq_data, parsed_aq_filename)
 
                 # Write to the CSV file if in use
                 if self.we_csv_storage:

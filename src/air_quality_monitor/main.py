@@ -109,9 +109,11 @@ def run_pipeline():
 
     # Always store the raw JSON data
     aq_json_filepath = Path(Config.DATA_DIR / "aqi_raw_history.jsonl")
+    logger.debug(f"JSON filepath: {aq_json_filepath}")
     aq_json_storage = JSONStorage(aq_json_filepath, AirQualityReading)
 
     we_json_filepath = Path(Config.DATA_DIR / "we_raw_history.jsonl")
+    logger.debug(f"JSON filepath: {we_json_filepath}")
     we_json_storage = JSONStorage(we_json_filepath, WeatherReading)
 
     # If we're storing data in CSV files, set them now.
@@ -137,12 +139,12 @@ def run_pipeline():
         aq_db_storage = None
         we_db_storage = None
 
+    # All set up. Let's run the pipeline!
     runner = PipelineRunner(
         aqc,
         wc,
         aq_parser,
         we_parser,
-        Config.DATA_DIR,
         aq_json_storage=aq_json_storage,
         we_json_storage=we_json_storage,
         aq_csv_storage=aq_csv_storage,
