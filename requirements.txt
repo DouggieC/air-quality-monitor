@@ -5,3 +5,4 @@ dataclasses
 datetime
 pandas
 sqlalchemy
+pytest

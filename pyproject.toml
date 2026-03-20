@@ -6,3 +6,6 @@ build-backend = "setuptools.build_meta"
 name = "air_quality_monitor"
 version = "0.1.0"
 
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

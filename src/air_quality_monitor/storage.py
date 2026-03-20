@@ -158,7 +158,7 @@ class DBStorage(BaseStorage):
         if not issubclass(self.model_class, Base):
             raise ValueError(f"{self.model_class} is not a valid SQLAlchemy model")
 
-    def save(self, reading, city: City):
+    def save(self, reading: Reading, city: City):
         # Write to the table
         self.logger.debug("Executing method")
         self.logger.info("Saving reading to CSV")

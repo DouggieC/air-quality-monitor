@@ -22,7 +22,7 @@ class AirQualityReading(Reading):
     temperature: int  # Temperature in Celsius
     humidity: int  # Humidity percentage
     pressure: int  # Atmospheric pressure in hPa
-    wind_speed: int  # Wind speed in m/s
+    wind_speed: float  # Wind speed in m/s
     wind_direction: int  # Wind direction in degrees
     heat_index: int  # Apparent temperature in Celsius, calculated from temperature and relative humidity
     weather_timestamp: datetime  # Timestamp of the weather measurement

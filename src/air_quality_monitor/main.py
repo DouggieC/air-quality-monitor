@@ -1,6 +1,5 @@
 import logging
 from pathlib import Path
-from time import sleep
 
 from .client import AirQualityClient, WeatherClient
 from .config import Config
@@ -21,26 +20,29 @@ def run_app():
     Config.DATA_DIR.mkdir(parents=True, exist_ok=True)
 
     # Initialize API clients
-    aqc = AirQualityClient(Config.IQAIR_API_KEY, Config.IQAIR_BASE_URL)
+    # aqc = AirQualityClient(Config.IQAIR_API_KEY, Config.IQAIR_BASE_URL)
     wc = WeatherClient(
         Config.OWM_API_KEY, Config.OWM_ONECALL_BASE_URL, Config.OWM_GEO_BASE_URL
     )
 
-    data = aqc.get_all_states("Greece")
-    print(type(data))
+    aq_csv_filepath = Path(Config.DATA_DIR / "aqi_history.csv")
+    aq_csv_storage = CSVStorage(aq_csv_filepath, AirQualityReading)
 
-    count = 0
-    # for entry in data['data']:
-    for entry in data:
-        cities = aqc.get_all_cities("Greece", entry["state"])
-        print(f"{entry['state']}: {cities}")
-        if "Athens" in cities:
-            break
-        count += 1
-        if count == 5:
-            print("Sleeping...")
-            sleep(60)
+    we_csv_filepath = Path(Config.DATA_DIR / "we_history.csv")
+    we_csv_storage = CSVStorage(we_csv_filepath, WeatherReading)
 
+    db = Database(Config.get_db_url())
+    aq_db_storage = DBStorage(db.engine, DBAirQualityReading)
+    we_db_storage = DBStorage(db.engine, DBWeatherReading)
+
+    df_aq_csv = aq_csv_storage.read()
+    print(f"AQI CSV:\n{df_aq_csv}")
+    df_we_csv = we_csv_storage.read()
+    print(f"OWM CSV:\n{df_we_csv}")
+    df_aq_db = aq_db_storage.read()
+    print(f"AQI DB:\n{df_aq_db}")
+    df_we_db = we_db_storage.read()
+    print(f"OWM DB:\n{df_we_db}")
     exit()
 
     # Get coordinates for Sarajevo
@@ -175,7 +177,7 @@ def main():
     logger.debug(f"CITY_LIST:\t{Config.CITY_LIST}")
     logger.debug(f"IS_PRODUCTION:\t{Config.IS_PRODUCTION}")
 
-    # run_app()
+    run_app()
     run_pipeline()
 
     logger.info("Air Quality Monitor finished")
