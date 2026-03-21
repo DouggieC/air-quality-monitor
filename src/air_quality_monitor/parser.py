@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .models import AirQualityReading, City, WeatherReading
 
@@ -15,27 +15,32 @@ class ResponseParser:
         # Force timestamps into datetime objects
         if ts is None:
             self.logger.debug("Timestamp not set")
-            return datetime.fromtimestamp(0)
+            return datetime.fromtimestamp(0, timezone.utc)
 
         # Already a number
         if isinstance(ts, (int, float)):
+            # Convert Unix timestamp to UTC-aware datetime
             self.logger.debug("Timestamp is a number")
-            return datetime.fromtimestamp(ts)
+            return datetime.fromtimestamp(ts, timezone.utc)
 
         # Try to coerce numeric strings first
         if isinstance(ts, str):
             self.logger.debug("Timestamp is a string")
             if ts.isdigit():
-                return datetime.fromtimestamp(int(ts))
+                return datetime.fromtimestamp(int(ts), timezone.utc)
             try:
                 # ISO format, e.g. "2023-03-02T12:34:56.000Z" or similar
-                return datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+                if dt.tzinfo is not None:
+                    return dt.astimezone(timezone.utc)
+                else:
+                    return dt.replace(tzinfo=timezone.utc)
             except ValueError:
                 pass
 
         # Fallback
         self.logger.debug("Can't figure it out. Returning best effort")
-        return datetime.fromtimestamp(0)
+        return datetime.fromtimestamp(0, timezone.utc)
 
 
 class AirQualityParser(ResponseParser):
