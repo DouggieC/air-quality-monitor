@@ -82,3 +82,4 @@ class City:
     country: str
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    timezone: str = None
