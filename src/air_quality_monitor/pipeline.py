@@ -2,7 +2,7 @@ import logging
 from time import sleep
 
 from .client import AirQualityClient, WeatherClient
-from .exceptions import APIError
+from .exceptions import APIError, ParseError, StorageError
 from .models import City
 from .parser import ResponseParser
 from .storage import JSONStorage
@@ -43,9 +43,18 @@ class PipelineRunner:
         call_count = 0
 
         for city in cities:
+            call_count += 1
+            if call_count == 5:
+                # Reset the counter to start the next batch of 5 calls and sleep
+                call_count = 0
+                self.logger.info("Max calls/min reached. Sleeping for 1 minute...")
+                sleep(60)
+
             try:
                 # Fetch raw AQI data for city & store it as JSON
                 self.logger.info(f"Processing AQI data for city: {city.city}")
+
+                # Record how many API calls we've made
                 raw_aq_data = self.aqc.get_city_data(city)
                 self.logger.debug(f"Raw data received:\t{raw_aq_data}")
                 self.aq_json_storage.save(raw_aq_data)
@@ -62,16 +71,16 @@ class PipelineRunner:
                     self.aq_db_storage.save(parsed_aq_data, city)
 
             except APIError as e:
-                self.logger.error(
-                    f"Error fetching air quality data for {city.city}: {e}"
-                )
+                self.logger.error(f"Error fetching air quality data for {city.city}: {e}")
+            except ParseError as e:
+                self.logger.error(f"Error parsing air quality data for {city.city}: {e}")
+            except StorageError as e:
+                self.logger.error(f"Error saving air quality data for {city.city}: {e}")
 
             try:
                 # Fetch raw OWM data for city & store it as JSON
                 self.logger.info(f"Processing OWM data for city: {city.city}")
-                raw_we_data = self.wc.get_current_weather(
-                    lat=city.latitude, lon=city.longitude
-                )
+                raw_we_data = self.wc.get_current_weather(lat=city.latitude, lon=city.longitude)
                 self.logger.debug(f"Raw data received:\t{raw_we_data}")
                 self.we_json_storage.save(raw_we_data)
 
@@ -88,10 +97,16 @@ class PipelineRunner:
 
             except APIError as e:
                 self.logger.error(f"Error fetching weather data for {city.city}: {e}")
+            except ParseError as e:
+                self.logger.error(f"Error parsing weather data for {city.city}: {e}")
+            except StorageError as e:
+                self.logger.error(f"Error saving weather data for {city.city}: {e}")
 
+            """
             call_count += 1
             if call_count == 5:
                 # Reset the counter to start the next batch of 5 calls and sleep
                 call_count = 0
                 self.logger.info("Max calls/min reached. Sleeping for 1 minute...")
                 sleep(60)
+            """

@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime, timezone
 
+from .exceptions import ParseError
 from .models import AirQualityReading, City, WeatherReading
 
 
@@ -16,7 +17,7 @@ class ResponseParser:
         if ts is None:
             self.logger.debug("Timestamp not set")
             # return datetime.fromtimestamp(0, timezone.utc) # Return epoch time
-            raise ValueError(f"Timestamp missing: {ts!r}")
+            raise ParseError(f"Timestamp missing: {ts!r}")
 
         # Already a number
         if isinstance(ts, (int, float)):
@@ -43,7 +44,7 @@ class ResponseParser:
         # self.logger.debug("Can't figure it out. Returning best effort")
         # return datetime.fromtimestamp(0, timezone.utc) # Return epoch time
         self.logger.debug("Can't figure it out.")
-        raise ValueError(f"Unrecognized timestamp: {ts!r}")
+        raise ParseError(f"Unrecognized timestamp: {ts!r}")
 
 
 class AirQualityParser(ResponseParser):
