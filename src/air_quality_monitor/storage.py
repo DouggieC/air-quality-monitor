@@ -1,7 +1,7 @@
 import csv
 import logging
 from abc import ABC, abstractmethod
-from dataclasses import asdict
+from dataclasses import asdict, fields
 from datetime import datetime
 from pathlib import Path
 
@@ -179,7 +179,9 @@ class DBStorage(BaseStorage):
                 self.logger.debug(f"Found city:\t{db_city}")
 
                 # Remove city data...
-                for key in ["city", "state", "country", "latitude", "longitude"]:
+                # for key in ["city", "state", "country", "latitude", "longitude"]:
+                city_keys = {f.name for f in fields(City)}
+                for key in city_keys:
                     reading_dict.pop(key)
 
                 # ...and add the city_id FK instead
@@ -215,9 +217,7 @@ class ParquetStorage(FileStorage):
     def __init__(self, filepath: Path, model_class):
         super().__init__(filepath, model_class)
 
-        self.not_implemented_msg = (
-            "Parquet storage is not yet implemented. Use CSV or DB instead."
-        )
+        self.not_implemented_msg = "Parquet storage is not yet implemented. Use CSV or DB instead."
         self.logger.warning(self.not_implemented_msg)
 
         if not issubclass(self.model_class, Base):

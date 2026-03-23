@@ -75,6 +75,6 @@ class City:
     city: str
     state: str
     country: str
+    timezone: str
     latitude: Optional[float] = None
     longitude: Optional[float] = None
-    timezone: str
