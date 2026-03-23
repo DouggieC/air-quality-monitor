@@ -37,14 +37,9 @@ class WeatherReading(Reading):
     country: str
     latitude: float
     longitude: float
-    timezone: str
-    timezone_offset: int  # Offset from UTC (seconds)
-    dt_utc: datetime  # Observation time (UTC timestamp)
-    dt_local: datetime  # Observation time (Local timestamp)
-    sunrise_utc: datetime  # Sunrise time (UTC timestamp)
-    sunrise_local: datetime  # Sunrise time (Local timestamp)
-    sunset_utc: datetime  # Sunset time (UTC timestamp)
-    sunset_local: datetime  # Sunset time (Local timestamp)
+    dt: datetime  # Observation time (UTC timestamp)
+    sunrise: datetime  # Sunrise time (UTC timestamp)
+    sunset: datetime  # Sunset time (UTC timestamp)
     temperature: float  # Temperature (C; default is K but API calls request metric)
     feels_like: float  # Perceived temperature (C)
     pressure: int  # Atmospheric pressure at MSL, hPa
@@ -82,4 +77,4 @@ class City:
     country: str
     latitude: Optional[float] = None
     longitude: Optional[float] = None
-    timezone: str = None
+    timezone: str

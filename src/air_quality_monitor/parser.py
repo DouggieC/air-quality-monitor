@@ -15,7 +15,8 @@ class ResponseParser:
         # Force timestamps into datetime objects
         if ts is None:
             self.logger.debug("Timestamp not set")
-            return datetime.fromtimestamp(0, timezone.utc)
+            # return datetime.fromtimestamp(0, timezone.utc) # Return epoch time
+            raise ValueError(f"Timestamp missing: {ts!r}")
 
         # Already a number
         if isinstance(ts, (int, float)):
@@ -39,8 +40,10 @@ class ResponseParser:
                 pass
 
         # Fallback
-        self.logger.debug("Can't figure it out. Returning best effort")
-        return datetime.fromtimestamp(0, timezone.utc)
+        # self.logger.debug("Can't figure it out. Returning best effort")
+        # return datetime.fromtimestamp(0, timezone.utc) # Return epoch time
+        self.logger.debug("Can't figure it out.")
+        raise ValueError(f"Unrecognized timestamp: {ts!r}")
 
 
 class AirQualityParser(ResponseParser):
@@ -67,7 +70,7 @@ class AirQualityParser(ResponseParser):
             wind_direction=weather.get("wd"),
             heat_index=weather.get("hi"),
             weather_timestamp=self._parse_timestamp(weather.get("ts")),
-            collected_at=datetime.now(),
+            collected_at=datetime.now(timezone.utc),
         )
         self.logger.debug(f"AirQualityReading:\t{aqr}")
         return aqr
@@ -90,16 +93,9 @@ class WeatherParser(ResponseParser):
             country=city.country,
             latitude=raw_data.get("lat"),
             longitude=raw_data.get("lon"),
-            timezone=raw_data.get("timezone"),
-            timezone_offset=timezone_offset,
-            dt_utc=self._parse_timestamp(current.get("dt")),
-            dt_local=self._parse_timestamp(current.get("dt") + timezone_offset),
-            sunrise_utc=self._parse_timestamp(current.get("sunrise")),
-            sunrise_local=self._parse_timestamp(
-                current.get("sunrise") + timezone_offset
-            ),
-            sunset_utc=self._parse_timestamp(current.get("sunset")),
-            sunset_local=self._parse_timestamp(current.get("sunset") + timezone_offset),
+            dt=self._parse_timestamp(current.get("dt")),
+            sunrise=self._parse_timestamp(current.get("sunrise")),
+            sunset=self._parse_timestamp(current.get("sunset")),
             temperature=current.get("temp"),
             feels_like=current.get("feels_like"),
             pressure=current.get("pressure"),
@@ -115,7 +111,7 @@ class WeatherParser(ResponseParser):
             snow=current.get("snow", {}).get("1h"),
             weather_main=current.get("weather", [{}])[0].get("main"),
             weather_desc=current.get("weather", [{}])[0].get("description"),
-            collected_at=datetime.now(),
+            collected_at=datetime.now(timezone.utc),
         )
         self.logger.debug(f"WeatherReading:\t{wr}")
         return wr
