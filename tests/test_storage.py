@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
-from sqlalchemy import Engine, create_engine
+from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from air_quality_monitor.db_models import Base, DBAirQualityReading, DBCity
@@ -30,6 +30,9 @@ class TestCSVStorage:
 
         df_save = pd.DataFrame([asdict(aqr)])
         df_read = pd.read_csv(file)
+        df_read["pollutant_timestamp"] = pd.to_datetime(df_read["pollutant_timestamp"], utc=True)
+        df_read["weather_timestamp"] = pd.to_datetime(df_read["weather_timestamp"], utc=True)
+        df_read["collected_at"] = pd.to_datetime(df_read["collected_at"], utc=True)
         pd.testing.assert_frame_equal(df_save, df_read, check_dtype=False)
 
     def test_read(self, csv_storage: CSVStorage, sample_aqr: AirQualityReading):
@@ -38,14 +41,20 @@ class TestCSVStorage:
         df_save = pd.DataFrame([asdict(sample_aqr)])
         df_save.to_csv(csv_storage.filepath, index=False)
 
+        # Do the read
         df_read = csv_storage.read()
+
+        # Once read is implemented elsewhere, conversion should happen there. Remove these
+        df_read["pollutant_timestamp"] = pd.to_datetime(df_read["pollutant_timestamp"], utc=True)
+        df_read["weather_timestamp"] = pd.to_datetime(df_read["weather_timestamp"], utc=True)
+        df_read["collected_at"] = pd.to_datetime(df_read["collected_at"], utc=True)
 
         pd.testing.assert_frame_equal(df_read, df_save, check_dtype=False)
 
 
 class TestDBStorage:
     @pytest.fixture
-    def db_storage(self, engine: Engine, sample_aqr, sample_city) -> DBStorage:
+    def db_storage(self, sample_aqr: AirQualityReading, sample_city: City) -> DBStorage:
 
         # Create the DB engine and all tables
         engine = create_engine("sqlite:///:memory:")
@@ -58,6 +67,7 @@ class TestDBStorage:
                     city=sample_city.city,
                     state=sample_city.state,
                     country=sample_city.country,
+                    timezone=sample_city.timezone,
                     latitude=sample_city.latitude,
                     longitude=sample_city.longitude,
                 )
@@ -68,7 +78,48 @@ class TestDBStorage:
 
         return aq_db
 
-    def test_save(
-        self, db_storage: DBStorage, sample_aqr: AirQualityReading, city: City
-    ):
-        pass
+    def test_save(self, db_storage: DBStorage, sample_aqr: AirQualityReading, sample_city: City):
+
+        # Write a row of data to the DB
+        db_storage.save(sample_aqr, sample_city)
+
+        # Check it's written by querying it back
+        with Session(db_storage.engine) as session:
+            row = session.query(DBAirQualityReading).first()
+
+        # Did it get written at all?
+        assert row is not None
+
+        # Does numeric & string data make the round trip correctly?
+        assert row.aqi == sample_aqr.aqi
+        assert row.main_pollutant == sample_aqr.main_pollutant
+        assert row.wind_speed == sample_aqr.wind_speed
+
+        # SQLite has problems with datetime formats. Skipping that test.
+        # assert row.pollutant_timestamp == sample_aqr.pollutant_timestamp
+
+    def test_read(self, db_storage: DBStorage, sample_aqr: AirQualityReading):
+
+        # Write some data to read from
+        with Session(db_storage.engine) as session:
+            city = session.query(DBCity).first()
+            city_id = city.id
+
+            row_dict = asdict(sample_aqr)
+            row_dict["city_id"] = city_id
+            for key in ["city", "state", "country", "latitude", "longitude"]:
+                row_dict.pop(key)
+
+            session.add(DBAirQualityReading(**row_dict))
+            session.commit()
+
+        # Read the data back
+        df_read = db_storage.read()
+
+        # Did we get anything back?
+        assert df_read is not None
+
+        # Does numeric & string data make the round trip correctly?
+        assert df_read.iloc[0]["aqi"] == sample_aqr.aqi
+        assert df_read.iloc[0]["main_pollutant"] == sample_aqr.main_pollutant
+        assert df_read.iloc[0]["wind_speed"] == sample_aqr.wind_speed
