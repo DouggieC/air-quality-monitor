@@ -182,7 +182,8 @@ class DBStorage(BaseStorage):
                 # for key in ["city", "state", "country", "latitude", "longitude"]:
                 city_keys = {f.name for f in fields(City)}
                 for key in city_keys:
-                    reading_dict.pop(key)
+                    self.logger.debug(f"Popping key {key}")
+                    reading_dict.pop(key, None)
 
                 # ...and add the city_id FK instead
                 reading_dict["city_id"] = db_city.id

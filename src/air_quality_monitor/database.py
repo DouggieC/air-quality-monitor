@@ -36,11 +36,7 @@ class Database:
             for city in cities:
                 # Add city to table if not already there
                 self.logger.debug(f"Checking for {city.city}")
-                exists = (
-                    session.query(DBCity)
-                    .filter_by(city=city.city, country=city.country)
-                    .first()
-                )
+                exists = session.query(DBCity).filter_by(city=city.city, country=city.country).first()
 
                 if not exists:
                     self.logger.debug(f"{city.city} not found. Adding to table...")
@@ -49,6 +45,7 @@ class Database:
                             city=city.city,
                             state=city.state,
                             country=city.country,
+                            timezone=city.timezone,
                             latitude=city.latitude,
                             longitude=city.longitude,
                         )
