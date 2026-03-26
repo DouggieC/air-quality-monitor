@@ -45,8 +45,9 @@ class Analyser(ABC):
     def filter_by_date_range(self, start_date=None, end_date=None) -> Analyser:
         self.logger.debug("Executing method")
 
-        start_date = self.df[self.timestamp_col].min if start_date is None else start_date
-        end_date = self.df[self.timestamp_col].max if end_date is None else end_date
+        # If date not provided, use earliest/latest in the dataset
+        start_date = self.df[self.timestamp_col].min() if start_date is None else start_date
+        end_date = self.df[self.timestamp_col].max() if end_date is None else end_date
 
         df_filtered = self.df[
             (self.df[self.timestamp_col] >= start_date) & (self.df[self.timestamp_col] <= end_date)

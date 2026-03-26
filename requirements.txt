@@ -6,3 +6,5 @@ datetime
 pandas
 sqlalchemy
 pytest
+matplotlib
+nbstripout
