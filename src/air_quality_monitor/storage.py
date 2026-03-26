@@ -38,6 +38,9 @@ class FileStorage(BaseStorage):
         if not issubclass(self.model_class, Reading):
             raise ValueError(f"{self.model_class} is not a valid Reading model")
 
+    def _get_datetime_cols(self) -> list[str]:
+        return [f.name for f in fields(self.model_class) if f.type == datetime]
+
 
 class CSVStorage(FileStorage):
     # A class to handle CSV file storage
@@ -75,7 +78,7 @@ class CSVStorage(FileStorage):
             raise FileNotFoundError(f"File not found: {self.filepath}")
 
         try:
-            df = pd.read_csv(self.filepath)
+            df = pd.read_csv(self.filepath, parse_dates=self._get_datetime_cols())
         except Exception as e:
             self.logger.error(f"Error reading {self.filepath}: {e}")
             raise

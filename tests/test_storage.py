@@ -45,11 +45,6 @@ class TestCSVStorage:
         # Do the read
         df_read = csv_storage.read()
 
-        # Once read is implemented elsewhere, conversion should happen there. Remove these
-        df_read["pollutant_timestamp"] = pd.to_datetime(df_read["pollutant_timestamp"], utc=True)
-        df_read["weather_timestamp"] = pd.to_datetime(df_read["weather_timestamp"], utc=True)
-        df_read["collected_at"] = pd.to_datetime(df_read["collected_at"], utc=True)
-
         pd.testing.assert_frame_equal(df_read, df_save, check_dtype=False)
 
 
