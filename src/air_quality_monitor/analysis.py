@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 
+import matplotlib.pyplot as plt
 import pandas as pd
 
 
@@ -53,10 +54,34 @@ class Analyser(ABC):
 
         return self.__class__(df_filtered)
 
+    def plot_line_chart(self, df: pd.DataFrame, x_axis: str, y_axis: str, title=None) -> plt.Figure:
+
+        if x_axis not in df.columns:
+            raise ValueError(f"Invalid column name: {x_axis}")
+        elif y_axis not in df.columns:
+            raise ValueError(f"Invalid column name: {y_axis}")
+
+        title = f"{y_axis} over time" if title is None else title
+
+        fig, ax = plt.subplots()
+        ax.plot(df[x_axis], df[y_axis])
+
+        ax.set(xlabel=x_axis.replace("_", " ").title(), ylabel=y_axis.replace("_", " ").title(), title=title)
+        ax.grid()
+
+        return fig
+
 
 class AirQualityAnalyser(Analyser):
     timestamp_col = "pollutant_timestamp"
 
+    def get_aqi_by_date_range(self, start_date=None, end_date=None) -> pd.DataFrame:
+        filtered = self.filter_by_date_range(start_date, end_date)
+        return filtered.df[[self.timestamp_col, "aqi"]]
+
 
 class WeatherAnalyser(Analyser):
     timestamp_col = "dt"
+
+    def get_weather_by_date_range(self, start_date=None, end_date=None) -> pd.DataFrame:
+        pass
