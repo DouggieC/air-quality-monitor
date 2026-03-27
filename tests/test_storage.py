@@ -123,6 +123,10 @@ class TestDBStorage:
 
 class TestJSONStorage:
     @pytest.fixture
+    def sample_aqr_json(self) -> str:
+        return '{"status": "success", "data": {"city": "Sarajevo", "state": "Federation of B&H", "country": "Bosnia Herzegovina", "location": {"type": "Point", "coordinates": [18.3972, 43.8559]}, "current": {"pollution": {"ts": "2026-03-19T16:00:00.000Z", "aqius": 63, "mainus": "p2", "aqicn": 24, "maincn": "p1"}, "weather": {"ts": "2026-03-19T16:00:00.000Z", "ic": "04d", "hu": 47, "pr": 1016, "tp": 7, "wd": 60, "ws": 4.17, "heatIndex": 7}}}}'
+
+    @pytest.fixture
     def json_storage(self, tmp_path: Path) -> JSONStorage:
 
         aq_json_file = tmp_path / "aq_test.jsonl"
@@ -130,12 +134,11 @@ class TestJSONStorage:
 
         return aq_json
 
-    def test_save(self, json_storage: JSONStorage, sample_aqr: AirQualityReading):
+    def test_save(self, json_storage: JSONStorage, sample_aqr_json: str):
 
         file = json_storage.filepath
 
-        aqr = '{"status": "success", "data": {"city": "Sarajevo", "state": "Federation of B&H", "country": "Bosnia Herzegovina", "location": {"type": "Point", "coordinates": [18.3972, 43.8559]}, "current": {"pollution": {"ts": "2026-03-19T16:00:00.000Z", "aqius": 63, "mainus": "p2", "aqicn": 24, "maincn": "p1"}, "weather": {"ts": "2026-03-19T16:00:00.000Z", "ic": "04d", "hu": 47, "pr": 1016, "tp": 7, "wd": 60, "ws": 4.17, "heatIndex": 7}}}}'
-        json_storage.save(aqr)
+        json_storage.save(sample_aqr_json)
 
         # Did anything get written?
         assert file.exists()
@@ -144,7 +147,8 @@ class TestJSONStorage:
         with open(file) as f:
             data = json.load(f)
 
-        assert data == aqr
+        # assert data == aqr
+        assert data == sample_aqr_json
 
     def test_read(self, json_storage: JSONStorage):
         pass
