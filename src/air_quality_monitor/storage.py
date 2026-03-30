@@ -7,7 +7,7 @@ from pathlib import Path
 
 import jsonlines
 import pandas as pd
-from sqlalchemy import Engine
+from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session
 
 from .db_models import Base, DBCity
@@ -164,7 +164,7 @@ class DBStorage(BaseStorage):
     def save(self, reading: Reading, city: City):
         # Write to the table
         self.logger.debug("Executing method")
-        self.logger.info("Saving reading to CSV")
+        self.logger.info("Saving reading to DB")
 
         reading_dict = asdict(reading)
         self.logger.debug(f"Data to be saved (dictionary): {reading_dict}")
@@ -206,7 +206,9 @@ class DBStorage(BaseStorage):
         # Implement database fetching logic here
 
         try:
-            df = pd.read_sql_table(self.model_class.__tablename__, self.engine)
+            # df = pd.read_sql_table(self.model_class.__tablename__, self.engine)
+            query = select(self.model_class, DBCity.timezone).join(DBCity)
+            df = pd.read_sql(query, self.engine)
         except Exception as e:
             self.logger.error(f"Error reading from database: {e}")
             raise

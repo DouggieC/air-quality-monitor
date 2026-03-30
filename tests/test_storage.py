@@ -103,7 +103,7 @@ class TestDBStorage:
 
             row_dict = asdict(sample_aqr)
             row_dict["city_id"] = city_id
-            for key in ["city", "state", "country", "latitude", "longitude"]:
+            for key in ["city", "state", "country", "timezone", "latitude", "longitude"]:
                 row_dict.pop(key)
 
             session.add(DBAirQualityReading(**row_dict))
@@ -117,6 +117,7 @@ class TestDBStorage:
 
         # Does numeric & string data make the round trip correctly?
         assert df_read.iloc[0]["aqi"] == sample_aqr.aqi
+        assert df_read.iloc[0]["timezone"] == sample_aqr.timezone
         assert df_read.iloc[0]["main_pollutant"] == sample_aqr.main_pollutant
         assert df_read.iloc[0]["wind_speed"] == sample_aqr.wind_speed
 

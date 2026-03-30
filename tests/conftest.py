@@ -23,6 +23,7 @@ def sample_aqr() -> AirQualityReading:
         city="Sarajevo",
         state="Federation of B&H",
         country="Bosnia Herzegovina",
+        timezone="Europe/Sarajevo",
         latitude=43.8519774,
         longitude=18.3866868,
         aqi=63,

@@ -14,6 +14,7 @@ class AirQualityReading(Reading):
     city: str
     state: str
     country: str
+    timezone: str
     latitude: float
     longitude: float
     aqi: int  # AQI based on US EPA standard
@@ -35,6 +36,7 @@ class WeatherReading(Reading):
     city: str
     state: str
     country: str
+    timezone: str
     latitude: float
     longitude: float
     dt: datetime  # Observation time (UTC timestamp)

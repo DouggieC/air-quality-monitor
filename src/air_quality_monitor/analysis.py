@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
+from zoneinfo import ZoneInfo
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -77,7 +78,30 @@ class AirQualityAnalyser(Analyser):
     timestamp_col = "pollutant_timestamp"
 
     def get_aqi_by_date_range(self, start_date=None, end_date=None) -> pd.DataFrame:
-        filtered = self.filter_by_date_range(start_date, end_date)
+        """
+        Returns AQI data for date range, converted to local time
+        Expects a DataFrame for a single city, so use filter_by_city() before calling this method. Behaviour is undefined if mulitple cities are present.
+
+        Args:
+            start_date: Start of date range. Defaults to the earliest tiem available.
+            end_date: End of date range. Defaults to the earliest tiem available.
+        """
+
+        # Convert UTC datetimes to local ones
+        local_df = self.df.copy()
+        local_df[self.timestamp_col] = self.df.apply(
+            lambda row: row[self.timestamp_col].astimezone(ZoneInfo(row["timezone"])), axis=1
+        )
+
+        # Convert start & end dates to local
+        tz = ZoneInfo(local_df.iloc[0]["timezone"])
+        if start_date and start_date.tzinfo is None:
+            start_date = start_date.replace(tzinfo=tz)
+        if end_date and end_date.tzinfo is None:
+            end_date = end_date.replace(tzinfo=tz)
+
+        filtered = self.__class__(local_df).filter_by_date_range(start_date, end_date)
+
         return filtered.df[[self.timestamp_col, "aqi"]]
 
 
