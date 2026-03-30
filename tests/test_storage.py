@@ -1,5 +1,6 @@
 import json
 from dataclasses import asdict
+from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
@@ -117,7 +118,8 @@ class TestDBStorage:
 
         # Does numeric & string data make the round trip correctly?
         assert df_read.iloc[0]["aqi"] == sample_aqr.aqi
-        assert df_read.iloc[0]["timezone"] == sample_aqr.timezone
+        assert isinstance(df_read.iloc[0]["pollutant_timestamp"], datetime)
+        assert df_read.iloc[0]["pollutant_timestamp"] == pd.Timestamp(sample_aqr.pollutant_timestamp)
         assert df_read.iloc[0]["main_pollutant"] == sample_aqr.main_pollutant
         assert df_read.iloc[0]["wind_speed"] == sample_aqr.wind_speed
 

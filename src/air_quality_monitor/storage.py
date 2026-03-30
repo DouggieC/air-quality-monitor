@@ -206,12 +206,15 @@ class DBStorage(BaseStorage):
         # Implement database fetching logic here
 
         try:
-            # df = pd.read_sql_table(self.model_class.__tablename__, self.engine)
             query = select(self.model_class, DBCity.timezone).join(DBCity)
             df = pd.read_sql(query, self.engine)
         except Exception as e:
             self.logger.error(f"Error reading from database: {e}")
             raise
+
+        for col in df.select_dtypes(include="datetime64"):
+            if df[col].dt.tz is None:
+                df[col] = df[col].dt.tz_localize("UTC")
 
         return df
 
