@@ -65,11 +65,17 @@ class Analyser(ABC):
 
         title = f"{y_axis} over time" if title is None else title
 
+        # Ensure data is in datetime order before plotting
+        df.sort_values(by=x_axis, inplace=True)
+
         fig, ax = plt.subplots()
-        ax.plot(df[x_axis], df[y_axis])
+        for city in df["city"].unique():
+            df_city = df.loc[df["city"] == city]
+            ax.plot(df_city[x_axis], df_city[y_axis], label=city)
 
         ax.set(xlabel=x_axis.replace("_", " ").title(), ylabel=y_axis.replace("_", " ").title(), title=title)
         ax.grid()
+        ax.legend()
 
         return fig
 
@@ -83,8 +89,8 @@ class AirQualityAnalyser(Analyser):
         Expects a DataFrame for a single city, so use filter_by_city() before calling this method. Behaviour is undefined if mulitple cities are present.
 
         Args:
-            start_date: Start of date range. Defaults to the earliest tiem available.
-            end_date: End of date range. Defaults to the earliest tiem available.
+            start_date: Start of date range. Defaults to the earliest time available.
+            end_date: End of date range. Defaults to the earliest time available.
         """
 
         # Convert UTC datetimes to local ones

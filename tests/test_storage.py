@@ -152,6 +152,3 @@ class TestJSONStorage:
 
         # assert data == aqr
         assert data == sample_aqr_json
-
-    def test_read(self, json_storage: JSONStorage):
-        pass

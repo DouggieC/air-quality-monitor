@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 
 import pandas as pd
 import pytest
+from matplotlib.pylab import Figure
 
 from air_quality_monitor.analysis import AirQualityAnalyser
 
@@ -233,5 +234,9 @@ class TestAirQualityAnalyser:
             <= pd.Timestamp("2026-03-27T11:00:00", tz="Europe/Sarajevo")
         ).all()
 
-    # def test_plot_line_chart():
-    #    assert True
+    def test_plot_line_chart(self, aqi_analyser_sj: AirQualityAnalyser):
+
+        df = aqi_analyser_sj.df[["city", aqi_analyser_sj.timestamp_col, "aqi"]]
+        fig = aqi_analyser_sj.plot_line_chart(df, aqi_analyser_sj.timestamp_col, "aqi")
+
+        assert isinstance(fig, Figure)
