@@ -53,7 +53,7 @@ class DBWeatherReading(Base):
     dew_point: Mapped[float] = mapped_column(Float)  # Air temp at which water condenses and dew can form (C)
     uvi: Mapped[float] = mapped_column(Float)  # UV index
     clouds: Mapped[int] = mapped_column(Integer)  # Cloudiness (%)
-    visibility: Mapped[int] = mapped_column(Integer)  # Average visibility (m, max 10km)
+    visibility: Mapped[int] = mapped_column(Integer, nullable=True)  # Average visibility (m, max 10km)
     wind_speed: Mapped[float] = mapped_column(Float)  # Wind speed (m/s)
     wind_direction: Mapped[int] = mapped_column(Integer)  # Wind direction (degrees)
     wind_gust: Mapped[float | None] = mapped_column(Float, nullable=True)  # Wind gust speed (m/s)
