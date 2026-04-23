@@ -59,9 +59,9 @@ class Analyser(ABC):
     def plot_line_chart(self, df: pd.DataFrame, x_axis: str, y_axis: str, title=None) -> plt.Figure:
 
         if x_axis not in df.columns:
-            raise ValueError(f"Invalid column name: {x_axis}")
+            raise ValueError(f"Invalid column name: {x_axis}. Columns are {df.columns}")
         elif y_axis not in df.columns:
-            raise ValueError(f"Invalid column name: {y_axis}")
+            raise ValueError(f"Invalid column name: {y_axis}. Columns are {df.columns}")
 
         title = f"{y_axis} over time" if title is None else title
 
