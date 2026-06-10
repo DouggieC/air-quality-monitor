@@ -8,11 +8,12 @@ from .models import City
 
 class AirQualityClient:
     # A client class to interact with the IQAir Air Quality API
-    def __init__(self, api_key, base_url):
+    def __init__(self, api_key, base_url, request_timeout):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug("Creating object")
         self.api_key = api_key
         self.base_url = base_url
+        self.request_timeout = request_timeout
 
     def get_all_countries(self):
         # Gets list of all countries with available data
@@ -23,7 +24,7 @@ class AirQualityClient:
 
         url = f"{self.base_url}countries"
         self.logger.debug(f"URL:\t{url}")
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, timeout=self.request_timeout)
 
         data = response.json()
         self.logger.debug(f"Data received:\t{data}")
@@ -38,7 +39,7 @@ class AirQualityClient:
 
         url = f"{self.base_url}states"
         self.logger.debug(f"URL:\t{url}")
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, timeout=self.request_timeout)
 
         data = response.json()
         self.logger.debug(f"Data received:\t{data}")
@@ -53,7 +54,7 @@ class AirQualityClient:
 
         url = f"{self.base_url}cities"
         self.logger.debug(f"URL:\t{url}")
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, timeout=self.request_timeout)
 
         data = response.json()
         self.logger.debug(f"Data received:\t{data}")
@@ -69,7 +70,7 @@ class AirQualityClient:
 
         url = f"{self.base_url}nearest_city"
         self.logger.debug(f"URL:\t{url}")
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, timeout=self.request_timeout)
 
         data = response.json()
         self.logger.debug(f"Data received:\t{data}")
@@ -89,26 +90,25 @@ class AirQualityClient:
 
         url = f"{self.base_url}city"
         self.logger.debug(f"URL:\t{url}")
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, timeout=self.request_timeout)
 
         data = response.json()
         self.logger.debug(f"Data received:\t{data}")
         if data.get("status") != "success":
-            raise APIError(
-                f"Status {data.get('status')}: {data.get('data', {}).get('message')}"
-            )
+            raise APIError(f"Status {data.get('status')}: {data.get('data', {}).get('message')}")
 
         return response.json()
 
 
 class WeatherClient:
     # A client to interact with the OpenWeatherMap API
-    def __init__(self, api_key, owm_oc_base_url, owm_geo_base_url):
+    def __init__(self, api_key, owm_oc_base_url, owm_geo_base_url, request_timeout):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug("Creating object")
         self.api_key = api_key
         self.oc_base_url = owm_oc_base_url
         self.geo_base_url = owm_geo_base_url
+        self.request_timeout = request_timeout
 
     def get_coordinates(self, city: City, limit=None) -> dict:
         # Get the latitude and longitude of a city
@@ -119,7 +119,7 @@ class WeatherClient:
 
         url = f"{self.geo_base_url}direct"
         self.logger.debug(f"URL:\t{url}")
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, timeout=self.request_timeout)
 
         data = response.json()[0]
         self.logger.debug(f"Data received:\t{data}")
@@ -140,7 +140,7 @@ class WeatherClient:
 
         url = f"{self.geo_base_url}reverse"
         self.logger.debug(f"URL:\t{url}")
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, timeout=self.request_timeout)
 
         data = response.json()
         self.logger.debug(f"Data received:\t{data}")
@@ -182,7 +182,7 @@ class WeatherClient:
 
         url = f"{self.oc_base_url}"
         self.logger.debug(f"URL:\t{url}")
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, timeout=self.request_timeout)
 
         data = response.json()
         self.logger.debug(f"Data received:\t{data}")

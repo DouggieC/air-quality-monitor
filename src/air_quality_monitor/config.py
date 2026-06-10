@@ -25,6 +25,9 @@ class Config:
     CONFIG_DIR = BASE_DIR / "config"
     LOG_DIR = BASE_DIR / "log"
 
+    # How long before HTTP requests time out?
+    REQUEST_TIMEOUT = 30
+
     # Required log level. Defaults to INFO
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 

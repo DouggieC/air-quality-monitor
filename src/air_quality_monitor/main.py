@@ -96,8 +96,10 @@ def run_pipeline():
     logger.debug("Executing method")
 
     # Create clients for AQI & OWM, and parsers to format API responses
-    aqc = AirQualityClient(Config.IQAIR_API_KEY, Config.IQAIR_BASE_URL)
-    wc = WeatherClient(Config.OWM_API_KEY, Config.OWM_ONECALL_BASE_URL, Config.OWM_GEO_BASE_URL)
+    aqc = AirQualityClient(Config.IQAIR_API_KEY, Config.IQAIR_BASE_URL, Config.REQUEST_TIMEOUT)
+    wc = WeatherClient(
+        Config.OWM_API_KEY, Config.OWM_ONECALL_BASE_URL, Config.OWM_GEO_BASE_URL, Config.REQUEST_TIMEOUT
+    )
     aq_parser = AirQualityParser()
     we_parser = WeatherParser()
 
@@ -172,6 +174,7 @@ def main():
     logger.debug(f"LOG_LEVEL:\t{Config.LOG_LEVEL}")
     logger.debug(f"CITY_LIST:\t{Config.CITY_LIST}")
     logger.debug(f"IS_PRODUCTION:\t{Config.IS_PRODUCTION}")
+    logger.debug(f"REQUEST_TIMOUT:\t{Config.REQUEST_TIMEOUT}")
 
     # run_app()
     run_pipeline()
