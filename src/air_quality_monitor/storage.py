@@ -39,7 +39,10 @@ class FileStorage(BaseStorage):
             raise ValueError(f"{self.model_class} is not a valid Reading model")
 
     def _get_datetime_cols(self) -> list[str]:
-        return [f.name for f in fields(self.model_class) if f.type == datetime]
+        dates = [f.name for f in fields(self.model_class) if f.type == datetime]
+        self.logger.debug(f"Datetime columns: {dates}")
+        return dates
+        #return [f.name for f in fields(self.model_class) if f.type == datetime]
 
 
 class CSVStorage(FileStorage):
@@ -82,6 +85,12 @@ class CSVStorage(FileStorage):
         except Exception as e:
             self.logger.error(f"Error reading {self.filepath}: {e}")
             raise
+
+        # Make sure datetime objects are correctly typed
+        for col in self._get_datetime_cols():
+            if df[col].dtype != 'datetime64':
+                df[col] = pd.to_datetime(df[col], utc=True, format='ISO8601')
+
 
         self.logger.debug(f"DataFrame created:\n{df}")
         return df
