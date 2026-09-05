@@ -33,7 +33,7 @@ class Config:
 
     # Write a log file? Default 'true'
     LOG_TO_FILE = os.getenv("LOG_TO_FILE", "true").lower() == "true"
-    
+
     # Is this a production system?
     IS_PRODUCTION = os.getenv("IS_PRODUCTION", "false").lower() == "true"
 
@@ -43,7 +43,7 @@ class Config:
     CITY_LIST = CONFIG_DIR / city_file
 
     # Are we saving to CSV? Default 'true'
-    USE_CSV = os.getenv("USE_DB", "true").lower() == "true"
+    USE_CSV = os.getenv("USE_CSV", "true").lower() == "true"
 
     # Database details
     # Are we using a database? Default 'false'
