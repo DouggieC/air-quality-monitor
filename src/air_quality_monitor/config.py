@@ -31,6 +31,9 @@ class Config:
     # Required log level. Defaults to INFO
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
+    # Write a log file? Default 'true'
+    LOG_TO_FILE = os.getenv("LOG_TO_FILE", "true").lower() == "true"
+    
     # Is this a production system?
     IS_PRODUCTION = os.getenv("IS_PRODUCTION", "false").lower() == "true"
 

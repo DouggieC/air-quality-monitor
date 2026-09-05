@@ -158,7 +158,7 @@ def run_pipeline():
 def main():
 
     # Start logging
-    setup_logging(log_level=Config.LOG_LEVEL, log_dir=Config.LOG_DIR)
+    setup_logging(log_level=Config.LOG_LEVEL, log_dir=Config.LOG_DIR, log_to_file=Config.LOG_TO_FILE)
     logger = logging.getLogger(__name__)
     logger.info("Air Quality Monitor started")
     logger.debug("Environment variables:")
@@ -172,6 +172,7 @@ def main():
     logger.debug(f"CONFIG_DIR:\t{Config.CONFIG_DIR}")
     logger.debug(f"LOG_DIR:\t{Config.LOG_DIR}")
     logger.debug(f"LOG_LEVEL:\t{Config.LOG_LEVEL}")
+    logger.debug(f"LOG_TO_FILE:\t{Config.LOG_TO_FILE}")
     logger.debug(f"CITY_LIST:\t{Config.CITY_LIST}")
     logger.debug(f"IS_PRODUCTION:\t{Config.IS_PRODUCTION}")
     logger.debug(f"REQUEST_TIMOUT:\t{Config.REQUEST_TIMEOUT}")

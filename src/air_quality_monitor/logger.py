@@ -3,13 +3,13 @@ import logging
 from pathlib import Path
 
 
-def setup_logging(log_level: str, log_dir: Path) -> None:
+def setup_logging(log_level: str, log_dir: Path, log_to_file: bool) -> None:
     # Main logger configuration
     # Always log to stdout
     handlers = [logging.StreamHandler()]
 
     # If LOG_TO_FILE is 'true' or unset, log to file as well
-    if os.getenv("LOG_TO_FILE", "true").lower() == "true":
+    if log_to_file:
         handlers.append(logging.FileHandler(log_dir / "air_quality_monitor.log", encoding="utf-8")) 
 
     logging.basicConfig(
