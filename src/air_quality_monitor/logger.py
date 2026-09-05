@@ -5,13 +5,17 @@ from pathlib import Path
 
 def setup_logging(log_level: str, log_dir: Path) -> None:
     # Main logger configuration
+    # Always log to stdout
+    handlers = [logging.StreamHandler()]
+
+    # If LOG_TO_FILE is 'true' or unset, log to file as well
+    if os.getenv("LOG_TO_FILE", "true").lower() == "true":
+        handlers.append(logging.FileHandler(log_dir / "air_quality_monitor.log", encoding="utf-8")) 
+
     logging.basicConfig(
         level=getattr(logging, log_level.upper(), logging.INFO),
         format="%(asctime)s - %(levelname)s - %(name)s - %(funcName)s - %(message)s",
-        handlers=[
-            logging.FileHandler(log_dir / "air_quality_monitor.log", encoding="utf-8"),
-            logging.StreamHandler(),
-        ],
+        handlers=handlers,
     )
 
     # OPTIONAL - override level for sspecific modules
