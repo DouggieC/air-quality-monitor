@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: aqm-postgres
+spec:
+  serviceName: aqm-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aqm-postgres
+  template:
+    metadata:
+      labels:
+        app: aqm-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          envFrom:
+            - configMapRef:
+                name: aqm-postgres-config
+            - secretRef:
+                name: aqm-postgres-secret
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: aqm-postgres-pvc

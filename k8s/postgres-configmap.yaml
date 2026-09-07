@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aqm-postgres-config
+data:
+  POSTGRES_USER: aqm_app
+  POSTGRERS_DB: air-quality-monitor

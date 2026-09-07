@@ -213,3 +213,4 @@ data/*
 
 # Secrets
 k8s/collector-secret.yaml
+k8s/postgres-secret.yaml
