@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aqm-collector-config
+data:
+  IQAIR_BASE_URL: https://api.airvisual.com/v2/
+  OWM_ONECALL_BASE_URL: https://api.openweathermap.org/data/3.0/onecall
+  OWM_GEO_BASE_URL: https://api.openweathermap.org/geo/1.0/
+  BASE_DIR: /app
+  LOG_LEVEL: INFO
+  LOG_TO_FILE: "false"
+  IS_PRODUCTION: "true"
+  USE_CSV: "true"
+  USE_DB: "false"
+  DB_TYPE: sqlite
+  DB_NAME: air_quality_monitor

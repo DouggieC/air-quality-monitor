@@ -211,3 +211,5 @@ __marimo__/
 *.parquet
 data/*
 
+# Secrets
+k8s/collector-secret.yaml
