@@ -3,5 +3,7 @@ kind: ConfigMap
 metadata:
   name: aqm-postgres-config
 data:
+  # DB connection strings
+  # Should match DB_USER and DB_NAME in collector-configmap.yaml
   POSTGRES_USER: aqm_app
-  POSTGRERS_DB: air-quality-monitor
+  POSTGRES_DB: air_quality_monitor

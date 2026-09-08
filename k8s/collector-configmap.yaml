@@ -3,14 +3,36 @@ kind: ConfigMap
 metadata:
   name: aqm-collector-config
 data:
+  #-------------------------------------
+  # This section not user configurable
+  #-------------------------------------
   IQAIR_BASE_URL: https://api.airvisual.com/v2/
   OWM_ONECALL_BASE_URL: https://api.openweathermap.org/data/3.0/onecall
   OWM_GEO_BASE_URL: https://api.openweathermap.org/geo/1.0/
   BASE_DIR: /app
+  #-------------------------------------
+  # End of non-configurable section
+  #-------------------------------------
+
+  # Required log level.
+  # Generally INFO unless you actively need to debug
   LOG_LEVEL: INFO
+
+  # Should the log be written to an external file?
+  # Generally false if containerised, true otherwise
   LOG_TO_FILE: "false"
+
+  # In prod we use the full cities list, but fewer in dev
+  # to save API calls
   IS_PRODUCTION: "true"
-  USE_CSV: "true"
-  USE_DB: "false"
-  DB_TYPE: sqlite
+
+  # Data storage toggles
+  USE_CSV: "false"
+  USE_DB: "true"
+
+  # Database backend details
+  DB_TYPE: postgresql
   DB_NAME: air_quality_monitor
+  DB_HOST: aqm-postgres
+  DB_PORT: "5432"
+  DB_USER: aqm_app
