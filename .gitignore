@@ -213,3 +213,5 @@ data/*
 
 # Kubernetes secrets
 k8s/collector-secret.yaml
+k8s/postgres-secret.yaml
+>>>>>>> origin/k8s-dev-pi

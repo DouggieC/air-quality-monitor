@@ -8,3 +8,4 @@ sqlalchemy
 pytest
 matplotlib
 nbstripout
+psycopg2-binary

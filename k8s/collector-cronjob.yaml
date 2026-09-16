@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: aqm-collector
+spec:
+  schedule: "10 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          containers:
+            - name: aqm-collector
+              image: aqm-collector:local
+              imagePullPolicy: IfNotPresent
+              envFrom:
+                - configMapRef:
+                    name: aqm-collector-config
+                - secretRef:
+                    name: aqm-collector-secret
+          restartPolicy: OnFailure
