@@ -2,7 +2,7 @@ import logging
 from datetime import datetime, timezone
 
 from .exceptions import ParseError
-from .models import AirQualityReading, City, WeatherReading
+from .models import AirQualityReading, City, WeatherReading, HourlyForecast, DailyForecast
 
 
 class ResponseParser:
@@ -50,6 +50,8 @@ class ResponseParser:
 class AirQualityParser(ResponseParser):
     def parse(self, raw_data: dict, city: City) -> AirQualityReading:
         self.logger.debug("Executing method")
+        self.logger.debug(f"Raw data received:\t{raw_data}")
+
 
         # Get at nested values
         pollution = raw_data.get("current", {}).get("pollution", {})
@@ -110,11 +112,111 @@ class WeatherParser(ResponseParser):
             wind_speed=current.get("wind_speed"),
             wind_gust=current.get("wind_gust"),
             wind_direction=current.get("wind_deg"),
-            rain=current.get("rain", {}).get("1h"),
-            snow=current.get("snow", {}).get("1h"),
+            rain=current.get("rain", {}).get("1h", 0.0),
+            snow=current.get("snow", {}).get("1h", 0.0),
             weather_main=current.get("weather", [{}])[0].get("main"),
             weather_desc=current.get("weather", [{}])[0].get("description"),
             collected_at=datetime.now(timezone.utc),
         )
         self.logger.debug(f"WeatherReading:\t{wr}")
         return wr
+
+class HourlyForecastParser(ResponseParser):
+    def parse(self, raw_data: dict, city: City) -> list[HourlyForecast]:
+        self.logger.debug("Executing method")
+        self.logger.debug(f"Raw data received:\t{raw_data}")
+
+        # Get at nested values
+        hourly = raw_data.get("hourly", [])
+        self.logger.debug(f"Hourly data:\t{hourly}")
+        lat=raw_data.get("lat")
+        lon=raw_data.get("lon")
+        coll_at=datetime.now(timezone.utc)
+
+        hours = []
+        for h in hourly:
+            hr = HourlyForecast(
+                city=city.city,
+                state=city.state,
+                country=city.country,
+                timezone=city.timezone,
+                latitude=lat,
+                longitude=lon,
+                forecast_for=self._parse_timestamp(h.get("dt")),
+                temperature=h.get("temp"),
+                feels_like=h.get("feels_like"),
+                pressure=h.get("pressure"),
+                humidity=h.get("humidity"),
+                dew_point=h.get("dew_point"),
+                uvi=h.get("uvi"),
+                clouds=h.get("clouds"),
+                visibility=h.get("visibility"),
+                wind_speed=h.get("wind_speed"),
+                wind_direction=h.get("wind_deg"),
+                wind_gust=h.get("wind_gust"),
+                pop=h.get("pop"),
+                rain=h.get("rain", {}).get("1h", 0.0),
+                snow=h.get("snow", {}).get("1h", 0.0),
+                weather_main=h.get("weather", [{}])[0].get("main"),
+                weather_desc=h.get("weather", [{}])[0].get("description"),
+                collected_at=coll_at
+            )
+            self.logger.debug(f"HourlyForecast:\t{hr}")
+            hours.append(hr)
+
+        return hours
+
+class DailyForecastParser(ResponseParser):
+    def parse(self, raw_data: dict, city: City) -> list[DailyForecast]:
+        self.logger.debug("Executing method")
+        self.logger.debug(f"Raw data received:\t{raw_data}")
+
+        # Get at nested values
+        daily = raw_data.get("daily", [])
+        self.logger.debug(f"Daily data:\t{daily}")
+        lat=raw_data.get("lat")
+        lon=raw_data.get("lon")
+        coll_at=datetime.now(timezone.utc)
+
+        days = []
+        for d in daily:
+            day = DailyForecast(
+                city=city.city,
+                state=city.state,
+                country=city.country,
+                timezone=city.timezone,
+                latitude=lat,
+                longitude=lon,
+                forecast_for=self._parse_timestamp(d.get("dt")),
+                sunrise=self._parse_timestamp(d.get("sunrise")),
+                sunset=self._parse_timestamp(d.get("sunset")),
+                temp_morn=d.get("temp", {}).get("morn"),
+                temp_day=d.get("temp", {}).get("day"),
+                temp_eve=d.get("temp", {}).get("eve"),
+                temp_night=d.get("temp", {}).get("night"),
+                temp_min=d.get("temp", {}).get("min"),
+                temp_max=d.get("temp", {}).get("max"),
+                feels_like_morn=d.get("feels_like", {}).get("morn"),
+                feels_like_day=d.get("feels_like", {}).get("day"),
+                feels_like_eve=d.get("feels_like", {}).get("eve"),
+                feels_like_night=d.get("feels_like", {}).get("night"),
+                pressure=d.get("pressure"),
+                humidity=d.get("humidity"),
+                dew_point=d.get("dew_point"),
+                uvi=d.get("uvi"),
+                clouds=d.get("clouds"),
+                wind_speed=d.get("wind_speed"),
+                wind_direction=d.get("wind_deg"),
+                wind_gust=d.get("wind_gust"),
+                pop=d.get("pop"),
+                rain=d.get("rain", 0.0),
+                snow=d.get("snow", 0.0),
+                weather_main=d.get("weather", [{}])[0].get("main"),
+                weather_desc=d.get("weather", [{}])[0].get("description"),
+                collected_at=coll_at
+            )
+            self.logger.debug(f"DailyForecast:\t{day}")
+            days.append(day)
+
+        return days
+

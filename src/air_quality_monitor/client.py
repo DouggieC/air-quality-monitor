@@ -152,7 +152,7 @@ class WeatherClient:
 
         return data
 
-    def get_current_weather(self, *, lat=None, lon=None, city: City | None = None):
+    def get_weather(self, *, lat=None, lon=None, city: City | None = None):
         # Get the full current weather data for the specified location
         self.logger.debug("Executing method")
 
@@ -174,7 +174,7 @@ class WeatherClient:
         params = {
             "lat": lat,
             "lon": lon,
-            "exclude": "minutely,hourly,daily,alerts",
+            "exclude": "current,minutely,alerts",
             "units": "metric",
             "appid": self.api_key,
         }
@@ -190,3 +190,8 @@ class WeatherClient:
             raise APIError(f"Error code {data.get('code')}: {data.get('message')}")
 
         return data
+
+    # get_current_weather to be deprecated as misleading -
+    # method now gets forecast data as well.
+    # Still valid for now, so alias.
+    get_current_weather = get_weather
