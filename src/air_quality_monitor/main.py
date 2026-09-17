@@ -4,10 +4,10 @@ from pathlib import Path
 from .client import AirQualityClient, WeatherClient
 from .config import Config
 from .database import Database
-from .db_models import DBAirQualityReading, DBWeatherReading, DBHourlyForecast, DBDailyForecast
+from .db_models import DBAirQualityReading, DBDailyForecast, DBHourlyForecast
 from .logger import setup_logging
-from .models import AirQualityReading, WeatherReading, HourlyForecast, DailyForecast
-from .parser import AirQualityParser, WeatherParser, HourlyForecastParser, DailyForecastParser
+from .models import AirQualityReading, DailyForecast, HourlyForecast, WeatherReading
+from .parser import AirQualityParser, DailyForecastParser, HourlyForecastParser
 from .pipeline import PipelineRunner
 from .storage import CSVStorage, DBStorage, JSONStorage
 
@@ -27,9 +27,9 @@ def run_app():
     aq_csv_storage = CSVStorage(aq_csv_filepath, AirQualityReading)
 
     hourly_csv_filepath = Path(Config.DATA_DIR / "hourly_forecast.csv")
-    hourly_csv_storage = CSVStorage(we_csv_filepath, HourlyForecast)
+    hourly_csv_storage = CSVStorage(hourly_csv_filepath, HourlyForecast)
     daily_csv_filepath = Path(Config.DATA_DIR / "daily_forecast.csv")
-    daily_csv_storage = CSVStorage(we_csv_filepath, DailyForecast)
+    daily_csv_storage = CSVStorage(daily_csv_filepath, DailyForecast)
 
     db = Database(Config.get_db_url())
     aq_db_storage = DBStorage(db.engine, DBAirQualityReading)

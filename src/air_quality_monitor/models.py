@@ -70,6 +70,7 @@ class WeatherAlert(Reading):
     description: str  # Description of the alert
     tags: list[str]  # Type of severe weather
 
+
 @dataclass
 class Forecast(Reading):
     # A base dataclass to represent an individual weather forecast
@@ -79,8 +80,9 @@ class Forecast(Reading):
     timezone: str
     latitude: float
     longitude: float
-    forecast_for: datetime # Timestamp when the forecast is for
-    collected_at: datetime # Timestamp when this reading was collected from the API
+    forecast_for: datetime  # Timestamp when the forecast is for
+    collected_at: datetime  # Timestamp when this reading was collected from the API
+
 
 @dataclass
 class HourlyForecast(Forecast):
@@ -96,26 +98,27 @@ class HourlyForecast(Forecast):
     wind_speed: float  # Wind speed (m/s)
     wind_direction: int  # Wind direction (degrees)
     wind_gust: float  # Wind gust speed (m/s)
-    pop: float   # Probability of precipitation (0-1)
+    pop: float  # Probability of precipitation (0-1)
     rain: float  # Rainfall (mm/h)
     snow: float  # Snowfall (mm/h)
     weather_main: str  # The main weather (clouds, rain, sun, etc.)
     weather_desc: str  # The weather description ('few clouds', etc.)
+
 
 @dataclass
 class DailyForecast(Forecast):
     # A dataclass to represent an individual daily weather forecast for a specific date
     sunrise: datetime  # Sunrise time (UTC timestamp)
     sunset: datetime  # Sunset time (UTC timestamp)
-    temp_morn: float   # Morning temperature (C; default is K but API calls request metric)
-    temp_day: float    # Day temperature (C; default is K but API calls request metric)
-    temp_eve: float    # Evening temperature (C; default is K but API calls request metric)
+    temp_morn: float  # Morning temperature (C; default is K but API calls request metric)
+    temp_day: float  # Day temperature (C; default is K but API calls request metric)
+    temp_eve: float  # Evening temperature (C; default is K but API calls request metric)
     temp_night: float  # Night temperature (C; default is K but API calls request metric)
-    temp_min: float    # Min daily temperature (C; default is K but API calls request metric)
-    temp_max: float    # Max daily temperature (C; default is K but API calls request metric)
-    feels_like_morn: float   # Perceived morning temperature (C)
-    feels_like_day: float    # Perceived  day temperature (C)
-    feels_like_eve: float    # Perceived temperature (C)
+    temp_min: float  # Min daily temperature (C; default is K but API calls request metric)
+    temp_max: float  # Max daily temperature (C; default is K but API calls request metric)
+    feels_like_morn: float  # Perceived morning temperature (C)
+    feels_like_day: float  # Perceived  day temperature (C)
+    feels_like_eve: float  # Perceived temperature (C)
     feels_like_night: float  # Perceived temperature (C)
     pressure: int  # Atmospheric pressure at MSL, hPa
     humidity: int  # Humidity (%)
@@ -125,11 +128,12 @@ class DailyForecast(Forecast):
     wind_speed: float  # Wind speed (m/s)
     wind_direction: int  # Wind direction (degrees)
     wind_gust: float  # Wind gust speed (m/s)
-    pop: float   # Probability of precipitation (0-1)
+    pop: float  # Probability of precipitation (0-1)
     rain: float  # Rainfall (mm/h)
     snow: float  # Snowfall (mm/h)
     weather_main: str  # The main weather (clouds, rain, sun, etc.)
     weather_desc: str  # The weather description ('few clouds', etc.)
+
 
 @dataclass
 class City:

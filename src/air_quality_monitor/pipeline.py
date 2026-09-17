@@ -102,7 +102,6 @@ class PipelineRunner:
                     if self.hourly_db_storage:
                         self.hourly_db_storage.save(forecast, city)
 
-
                 # Parse the hourly data ready for storage
                 parsed_daily_forecasts = self.daily_parser.parse(raw_we_data, city)
 
@@ -115,12 +114,9 @@ class PipelineRunner:
                     if self.daily_db_storage:
                         self.daily_db_storage.save(forecast, city)
 
-
-
             except APIError as e:
                 self.logger.error(f"Error fetching weather data for {city.city}: {e}")
             except ParseError as e:
                 self.logger.error(f"Error parsing weather data for {city.city}: {e}")
             except StorageError as e:
                 self.logger.error(f"Error saving weather data for {city.city}: {e}")
-

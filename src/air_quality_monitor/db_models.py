@@ -97,12 +97,12 @@ class DBDailyForecast(Base):
     forecast_for: Mapped[datetime] = mapped_column(DateTime(timezone=True))  # UTC Forecast time
     sunrise: Mapped[datetime] = mapped_column(DateTime(timezone=True))  # Sunrise time (UTC timestamp)
     sunset: Mapped[datetime] = mapped_column(DateTime(timezone=True))  # Sunset time (UTC timestamp)
-    temp_morn: Mapped[float] = mapped_column(Float)  # Morning temperature (C; default K but API calls request C)
-    temp_day: Mapped[float] = mapped_column(Float)  # Day temperature (C; default K but API calls request C)
-    temp_eve: Mapped[float] = mapped_column(Float)  # Evening temperature (C; default K but API calls request C)
-    temp_night: Mapped[float] = mapped_column(Float)  # Night temperature (C; default K but API calls request C)
-    temp_min: Mapped[float] = mapped_column(Float)  # Min temperature (C; default K but API calls request C)
-    temp_max: Mapped[float] = mapped_column(Float)  # Max temperature (C; default K but API calls request C)
+    temp_morn: Mapped[float] = mapped_column(Float)  # Morning temp (C; default K but API calls request C)
+    temp_day: Mapped[float] = mapped_column(Float)  # Day temp (C; default K but API calls request C)
+    temp_eve: Mapped[float] = mapped_column(Float)  # Evening temp (C; default K but API calls request C)
+    temp_night: Mapped[float] = mapped_column(Float)  # Night temp (C; default K but API calls request C)
+    temp_min: Mapped[float] = mapped_column(Float)  # Min temp (C; default K but API calls request C)
+    temp_max: Mapped[float] = mapped_column(Float)  # Max temp (C; default K but API calls request C)
     feels_like_morn: Mapped[float] = mapped_column(Float)  # Perceived temperature (C)
     feels_like_day: Mapped[float] = mapped_column(Float)  # Perceived temperature (C)
     feels_like_eve: Mapped[float] = mapped_column(Float)  # Perceived temperature (C)
@@ -121,4 +121,3 @@ class DBDailyForecast(Base):
     weather_main: Mapped[str] = mapped_column(String(100))  # The main weather (clouds, rain, sun, etc.)
     weather_desc: Mapped[str] = mapped_column(String(100))  # The weather description ('few clouds', etc.)
     collected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))  # API collection timestamp
-
