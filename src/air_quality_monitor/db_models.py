@@ -62,3 +62,63 @@ class DBWeatherReading(Base):
     weather_main: Mapped[str] = mapped_column(String(100))  # The main weather (clouds, rain, sun, etc.)
     weather_desc: Mapped[str] = mapped_column(String(100))  # The weather description ('few clouds', etc.)
     collected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))  # API collection timestamp
+
+
+class DBHourlyForecast(Base):
+    __tablename__ = "hourly_forecast"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    city_id: Mapped[int] = mapped_column(ForeignKey("city.id"))
+    forecast_for: Mapped[datetime] = mapped_column(DateTime(timezone=True))  # UTC Forecast time
+    temperature: Mapped[float] = mapped_column(Float)  # Temperature (C; default K but API calls request C)
+    feels_like: Mapped[float] = mapped_column(Float)  # Perceived temperature (C)
+    pressure: Mapped[int] = mapped_column(Integer)  # Atmospheric pressure at MSL, hPa
+    humidity: Mapped[int] = mapped_column(Integer)  # Humidity (%)
+    dew_point: Mapped[float] = mapped_column(Float)  # Air temp at which water condenses and dew can form (C)
+    uvi: Mapped[float] = mapped_column(Float)  # UV index
+    clouds: Mapped[int] = mapped_column(Integer)  # Cloudiness (%)
+    visibility: Mapped[int] = mapped_column(Integer, nullable=True)  # Average visibility (m, max 10km)
+    wind_speed: Mapped[float] = mapped_column(Float)  # Wind speed (m/s)
+    wind_direction: Mapped[int] = mapped_column(Integer)  # Wind direction (degrees)
+    wind_gust: Mapped[float | None] = mapped_column(Float, nullable=True)  # Wind gust speed (m/s)
+    pop: Mapped[float | None] = mapped_column(Float)  # Probability of precipitation (0-1)
+    rain: Mapped[float | None] = mapped_column(Float, nullable=True)  # Rainfall (mm/h)
+    snow: Mapped[float | None] = mapped_column(Float, nullable=True)  # Snowfall (mm/h)
+    weather_main: Mapped[str] = mapped_column(String(100))  # The main weather (clouds, rain, sun, etc.)
+    weather_desc: Mapped[str] = mapped_column(String(100))  # The weather description ('few clouds', etc.)
+    collected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))  # API collection timestamp
+
+
+class DBDailyForecast(Base):
+    __tablename__ = "daily_forecast"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    city_id: Mapped[int] = mapped_column(ForeignKey("city.id"))
+    forecast_for: Mapped[datetime] = mapped_column(DateTime(timezone=True))  # UTC Forecast time
+    sunrise: Mapped[datetime] = mapped_column(DateTime(timezone=True))  # Sunrise time (UTC timestamp)
+    sunset: Mapped[datetime] = mapped_column(DateTime(timezone=True))  # Sunset time (UTC timestamp)
+    temp_morn: Mapped[float] = mapped_column(Float)  # Morning temperature (C; default K but API calls request C)
+    temp_day: Mapped[float] = mapped_column(Float)  # Day temperature (C; default K but API calls request C)
+    temp_eve: Mapped[float] = mapped_column(Float)  # Evening temperature (C; default K but API calls request C)
+    temp_night: Mapped[float] = mapped_column(Float)  # Night temperature (C; default K but API calls request C)
+    temp_min: Mapped[float] = mapped_column(Float)  # Min temperature (C; default K but API calls request C)
+    temp_max: Mapped[float] = mapped_column(Float)  # Max temperature (C; default K but API calls request C)
+    feels_like_morn: Mapped[float] = mapped_column(Float)  # Perceived temperature (C)
+    feels_like_day: Mapped[float] = mapped_column(Float)  # Perceived temperature (C)
+    feels_like_eve: Mapped[float] = mapped_column(Float)  # Perceived temperature (C)
+    feels_like_night: Mapped[float] = mapped_column(Float)  # Perceived temperature (C)
+    pressure: Mapped[int] = mapped_column(Integer)  # Atmospheric pressure at MSL, hPa
+    humidity: Mapped[int] = mapped_column(Integer)  # Humidity (%)
+    dew_point: Mapped[float] = mapped_column(Float)  # Air temp at which water condenses and dew can form (C)
+    uvi: Mapped[float] = mapped_column(Float)  # UV index
+    clouds: Mapped[int] = mapped_column(Integer)  # Cloudiness (%)
+    wind_speed: Mapped[float] = mapped_column(Float)  # Wind speed (m/s)
+    wind_direction: Mapped[int] = mapped_column(Integer)  # Wind direction (degrees)
+    wind_gust: Mapped[float | None] = mapped_column(Float, nullable=True)  # Wind gust speed (m/s)
+    pop: Mapped[float | None] = mapped_column(Float)  # Probability of precipitation (0-1)
+    rain: Mapped[float | None] = mapped_column(Float, nullable=True)  # Rainfall (mm/h)
+    snow: Mapped[float | None] = mapped_column(Float, nullable=True)  # Snowfall (mm/h)
+    weather_main: Mapped[str] = mapped_column(String(100))  # The main weather (clouds, rain, sun, etc.)
+    weather_desc: Mapped[str] = mapped_column(String(100))  # The weather description ('few clouds', etc.)
+    collected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))  # API collection timestamp
+

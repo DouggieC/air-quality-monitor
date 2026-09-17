@@ -71,7 +71,7 @@ class WeatherAlert(Reading):
     tags: list[str]  # Type of severe weather
 
 @dataclass
-class Forecast:
+class Forecast(Reading):
     # A base dataclass to represent an individual weather forecast
     city: str
     state: str

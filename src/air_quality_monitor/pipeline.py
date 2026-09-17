@@ -14,26 +14,32 @@ class PipelineRunner:
         aqc: AirQualityClient,
         wc: WeatherClient,
         aq_parser: ResponseParser,
-        we_parser: ResponseParser,
+        hourly_parser: ResponseParser,
+        daily_parser: ResponseParser,
         aq_json_storage: JSONStorage,
         we_json_storage: JSONStorage,
         aq_csv_storage=None,
-        we_csv_storage=None,
+        hourly_csv_storage=None,
+        daily_csv_storage=None,
         aq_db_storage=None,
-        we_db_storage=None,
+        hourly_db_storage=None,
+        daily_db_storage=None,
     ):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug("Creating object")
         self.aqc = aqc
         self.wc = wc
         self.aq_parser = aq_parser
-        self.we_parser = we_parser
+        self.hourly_parser = hourly_parser
+        self.daily_parser = daily_parser
         self.aq_json_storage = aq_json_storage
         self.we_json_storage = we_json_storage
         self.aq_csv_storage = aq_csv_storage
-        self.we_csv_storage = we_csv_storage
+        self.hourly_csv_storage = hourly_csv_storage
+        self.daily_csv_storage = daily_csv_storage
         self.aq_db_storage = aq_db_storage
-        self.we_db_storage = we_db_storage
+        self.hourly_db_storage = hourly_db_storage
+        self.daily_db_storage = daily_db_storage
 
     def run(self, cities: list[City]) -> None:
         # For each city, fetch data, store raw JSON, parse and store structured data as CSV and/or DB
@@ -79,21 +85,37 @@ class PipelineRunner:
 
             try:
                 # Fetch raw OWM data for city & store it as JSON
-                self.logger.info(f"Processing OWM data for city: {city.city}")
+                self.logger.info(f"Processing OWM forecast data for city: {city.city}")
                 raw_we_data = self.wc.get_current_weather(lat=city.latitude, lon=city.longitude)
                 self.logger.debug(f"Raw data received:\t{raw_we_data}")
                 self.we_json_storage.save(raw_we_data)
 
-                # Parse the data ready for storage
-                parsed_we_data = self.we_parser.parse(raw_we_data, city)
+                # Parse the hourly data ready for storage
+                parsed_hourly_forecasts = self.hourly_parser.parse(raw_we_data, city)
 
-                # Write to the CSV file if in use
-                if self.we_csv_storage:
-                    self.we_csv_storage.save(parsed_we_data)
+                for forecast in parsed_hourly_forecasts:
+                    # Write to the CSV file if in use
+                    if self.hourly_csv_storage:
+                        self.hourly_csv_storage.save(forecast)
 
-                # Write to the DB if in use
-                if self.we_db_storage:
-                    self.we_db_storage.save(parsed_we_data, city)
+                    # Write to the DB if in use
+                    if self.hourly_db_storage:
+                        self.hourly_db_storage.save(forecast, city)
+
+
+                # Parse the hourly data ready for storage
+                parsed_daily_forecasts = self.daily_parser.parse(raw_we_data, city)
+
+                for forecast in parsed_daily_forecasts:
+                    # Write to the CSV file if in use
+                    if self.daily_csv_storage:
+                        self.daily_csv_storage.save(forecast)
+
+                    # Write to the DB if in use
+                    if self.daily_db_storage:
+                        self.daily_db_storage.save(forecast, city)
+
+
 
             except APIError as e:
                 self.logger.error(f"Error fetching weather data for {city.city}: {e}")
@@ -102,11 +124,3 @@ class PipelineRunner:
             except StorageError as e:
                 self.logger.error(f"Error saving weather data for {city.city}: {e}")
 
-            """
-            call_count += 1
-            if call_count == 5:
-                # Reset the counter to start the next batch of 5 calls and sleep
-                call_count = 0
-                self.logger.info("Max calls/min reached. Sleeping for 1 minute...")
-                sleep(60)
-            """

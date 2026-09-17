@@ -4,10 +4,10 @@ from pathlib import Path
 from .client import AirQualityClient, WeatherClient
 from .config import Config
 from .database import Database
-from .db_models import DBAirQualityReading, DBWeatherReading
+from .db_models import DBAirQualityReading, DBWeatherReading, DBHourlyForecast, DBDailyForecast
 from .logger import setup_logging
-from .models import AirQualityReading, WeatherReading
-from .parser import AirQualityParser, WeatherParser
+from .models import AirQualityReading, WeatherReading, HourlyForecast, DailyForecast
+from .parser import AirQualityParser, WeatherParser, HourlyForecastParser, DailyForecastParser
 from .pipeline import PipelineRunner
 from .storage import CSVStorage, DBStorage, JSONStorage
 
@@ -26,21 +26,28 @@ def run_app():
     aq_csv_filepath = Path(Config.DATA_DIR / "aqi_history.csv")
     aq_csv_storage = CSVStorage(aq_csv_filepath, AirQualityReading)
 
-    we_csv_filepath = Path(Config.DATA_DIR / "we_history.csv")
-    we_csv_storage = CSVStorage(we_csv_filepath, WeatherReading)
+    hourly_csv_filepath = Path(Config.DATA_DIR / "hourly_forecast.csv")
+    hourly_csv_storage = CSVStorage(we_csv_filepath, HourlyForecast)
+    daily_csv_filepath = Path(Config.DATA_DIR / "daily_forecast.csv")
+    daily_csv_storage = CSVStorage(we_csv_filepath, DailyForecast)
 
     db = Database(Config.get_db_url())
     aq_db_storage = DBStorage(db.engine, DBAirQualityReading)
-    we_db_storage = DBStorage(db.engine, DBWeatherReading)
+    hourly_db_storage = DBStorage(db.engine, DBHourlyForecast)
+    daily_db_storage = DBStorage(db.engine, DBDailyForecast)
 
     df_aq_csv = aq_csv_storage.read()
     print(f"AQI CSV:\n{df_aq_csv}")
-    df_we_csv = we_csv_storage.read()
-    print(f"OWM CSV:\n{df_we_csv}")
+    df_hourly_csv = hourly_csv_storage.read()
+    print(f"OWM Hourly CSV:\n{df_hourly_csv}")
+    df_daily_csv = daily_csv_storage.read()
+    print(f"OWM Daily CSV:\n{df_daily_csv}")
     df_aq_db = aq_db_storage.read()
     print(f"AQI DB:\n{df_aq_db}")
-    df_we_db = we_db_storage.read()
-    print(f"OWM DB:\n{df_we_db}")
+    df_hourly_db = hourly_db_storage.read()
+    print(f"OWM Hourly DB:\n{df_hourly_db}")
+    df_daily_db = daily_db_storage.read()
+    print(f"OWM Daily DB:\n{df_daily_db}")
     exit()
 
     # Get coordinates for Sarajevo
@@ -101,7 +108,8 @@ def run_pipeline():
         Config.OWM_API_KEY, Config.OWM_ONECALL_BASE_URL, Config.OWM_GEO_BASE_URL, Config.REQUEST_TIMEOUT
     )
     aq_parser = AirQualityParser()
-    we_parser = WeatherParser()
+    hourly_parser = HourlyForecastParser()
+    daily_parser = DailyForecastParser()
 
     # Load the list of cities
     cities = Config.load_cities()
@@ -121,11 +129,15 @@ def run_pipeline():
         aq_csv_filepath = Path(Config.DATA_DIR / "aqi_history.csv")
         aq_csv_storage = CSVStorage(aq_csv_filepath, AirQualityReading)
 
-        we_csv_filepath = Path(Config.DATA_DIR / "we_history.csv")
-        we_csv_storage = CSVStorage(we_csv_filepath, WeatherReading)
+        hourly_csv_filepath = Path(Config.DATA_DIR / "hourly_forecast.csv")
+        hourly_csv_storage = CSVStorage(hourly_csv_filepath, HourlyForecast)
+
+        daily_csv_filepath = Path(Config.DATA_DIR / "daily_forecast.csv")
+        daily_csv_storage = CSVStorage(daily_csv_filepath, DailyForecast)
     else:
         aq_csv_storage = None
-        we_csv_storage = None
+        hourly_csv_storage = None
+        daily_csv_storage = None
 
     # If we're storing data in a DB, set them now.
     if Config.USE_DB:
@@ -133,24 +145,29 @@ def run_pipeline():
         db.sync_cities(cities)
 
         aq_db_storage = DBStorage(db.engine, DBAirQualityReading)
-        we_db_storage = DBStorage(db.engine, DBWeatherReading)
+        hourly_db_storage = DBStorage(db.engine, DBHourlyForecast)
+        daily_db_storage = DBStorage(db.engine, DBDailyForecast)
     else:
         db = None
         aq_db_storage = None
-        we_db_storage = None
+        hourly_db_storage = None
+        daily_db_storage = None
 
     # All set up. Let's run the pipeline!
     runner = PipelineRunner(
         aqc,
         wc,
         aq_parser,
-        we_parser,
+        hourly_parser,
+        daily_parser,
         aq_json_storage=aq_json_storage,
         we_json_storage=we_json_storage,
         aq_csv_storage=aq_csv_storage,
-        we_csv_storage=we_csv_storage,
+        hourly_csv_storage=hourly_csv_storage,
+        daily_csv_storage=daily_csv_storage,
         aq_db_storage=aq_db_storage,
-        we_db_storage=we_db_storage,
+        hourly_db_storage=hourly_db_storage,
+        daily_db_storage=daily_db_storage,
     )
     runner.run(cities)
 
