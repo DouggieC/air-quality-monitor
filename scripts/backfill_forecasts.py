@@ -65,9 +65,15 @@ df = df[
 
 # Create forecasts from df values
 print("Creating forecasts from df values")
+
+output_file = "data/hourly_forecast.csv"
+first_time = True
+
+# Hours ahead to generate forecasts for
 horizons = [1, 2, 4, 8, 12, 24, 48]
 rows = []
 forecast_df = pd.DataFrame()
+
 for city in df["city"].unique():
     print(f"Processing city: {city}")
     city_df = df[df["city"] == city].sort_values(by="forecast_for")
@@ -83,16 +89,30 @@ for city in df["city"].unique():
                 row["collected_at"] = collected_at
                 rows.append(row)
 
+    print(f"Total rows generated for city {city}: {len(rows)}")
+
+    city_result = pd.DataFrame(rows)
+    city_result = city_result.sort_values(by=["collected_at", "forecast_for"]).reset_index(drop=True)
+    city_result.to_csv(output_file, mode="a", header=first_time, index=False)
+
+    first_time = False
+    del rows, city_result
+
+
 print(f"Total rows generated: {len(rows)}")
 print("Creating DataFrame from rows")
 result = pd.DataFrame(rows)
 
 print("Sorting result by collected_at and forecast_for")
+result = pd.read_csv(output_file)
 result = result.sort_values(by=["collected_at", "forecast_for"]).reset_index(drop=True)
+result.to_csv(output_file, index=False)
 
+"""
 # Write the result to a new CSV file
 print("Writing result to data/hourly_forecast.csv")
 result.to_csv("data/hourly_forecast.csv", index=False)
+"""
 
 # Begin DB processing
 print("Starting database processing")
