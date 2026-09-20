@@ -71,11 +71,11 @@ first_time = True
 
 # Hours ahead to generate forecasts for
 horizons = [1, 2, 4, 8, 12, 24, 48]
-rows = []
 forecast_df = pd.DataFrame()
 
 for city in df["city"].unique():
     print(f"Processing city: {city}")
+    rows = []
     city_df = df[df["city"] == city].sort_values(by="forecast_for")
     earliest = city_df["forecast_for"].min()
 
@@ -99,9 +99,11 @@ for city in df["city"].unique():
     del rows, city_result
 
 
+'''
 print(f"Total rows generated: {len(rows)}")
 print("Creating DataFrame from rows")
 result = pd.DataFrame(rows)
+'''
 
 print("Sorting result by collected_at and forecast_for")
 result = pd.read_csv(output_file)
