@@ -226,6 +226,12 @@ class DBStorage(BaseStorage):
                 DBCity.timezone,
             ).join(DBCity)
             df = pd.read_sql(query, self.engine)
+
+            # Don't need city_id as we have the city info from the join
+            if "city_id" in df.columns:
+                self.logger.debug("Dropping city_id column")
+                df.drop(columns=["city_id"], inplace=True)
+
         except Exception as e:
             self.logger.error(f"Error reading from database: {e}")
             raise

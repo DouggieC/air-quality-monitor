@@ -1,8 +1,10 @@
 import logging
+import sys
 from pathlib import Path
 
 from .client import AirQualityClient, WeatherClient
 from .config import Config
+from .features import FeatureEngineer
 from .logger import setup_logging
 from .models import AirQualityReading, DailyForecast, HourlyForecast, WeatherReading
 from .parser import AirQualityParser, DailyForecastParser, HourlyForecastParser
@@ -150,12 +152,30 @@ def run_pipeline():
     runner.run(cities)
 
 
+def run_feature_engineering():
+    logger = logging.getLogger(__name__)
+    logger.debug("Executing method")
+
+    # Set up storage
+    sf = StorageFactory(Config)
+    aqi_csv, aqi_db = sf.get_storage(AirQualityReading)
+    we_csv, we_db = sf.get_storage(HourlyForecast)
+
+    # Pick DB or CSV. Prefer DB if both available
+    aqi_storage = aqi_db or aqi_csv
+    we_storage = we_db or we_csv
+
+    # Run feature engineering
+    engineer = FeatureEngineer(aqi_storage, we_storage)
+    training_df = engineer.build()
+    training_df.to_csv(Config.DATA_DIR / "training_data.csv", index=False)
+
+
 def main():
 
     # Start logging
     setup_logging(log_level=Config.LOG_LEVEL, log_dir=Config.LOG_DIR, log_to_file=Config.LOG_TO_FILE)
     logger = logging.getLogger(__name__)
-    logger.info("Air Quality Monitor started")
     logger.debug("Environment variables:")
     logger.debug(f"IQAIR_API_KEY:\t{Config.IQAIR_API_KEY}")
     logger.debug(f"IQAIR_BASE_URL:\t{Config.IQAIR_BASE_URL}")
@@ -174,10 +194,14 @@ def main():
     logger.debug(f"IS_PRODUCTION:\t{Config.IS_PRODUCTION}")
     logger.debug(f"REQUEST_TIMEOUT:\t{Config.REQUEST_TIMEOUT}")
 
-    # run_app()
-    run_pipeline()
-
-    logger.info("Air Quality Monitor finished")
+    if len(sys.argv) > 1 and sys.argv[1] == "features":
+        logger.info("Air Quality Monitor feature engineering pipeline started")
+        run_feature_engineering()
+        logger.info("Air Quality Monitor feature engineering pipeline finished")
+    else:
+        logger.info("Air Quality Monitor data collection pipeline started")
+        run_pipeline()
+        logger.info("Air Quality Monitor data collection pipeline finished")
 
 
 if __name__ == "__main__":
