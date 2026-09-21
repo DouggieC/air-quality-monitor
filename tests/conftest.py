@@ -2,7 +2,7 @@ from datetime import datetime
 
 import pytest
 
-from air_quality_monitor.models import AirQualityReading, City, WeatherReading
+from air_quality_monitor.models import AirQualityReading, City, HourlyForecast, WeatherReading
 
 
 @pytest.fixture
@@ -66,6 +66,35 @@ def sample_wr() -> WeatherReading:
         visibility=10000,
         wind_speed=2.57,
         wind_deg=210,
+        wind_gust=6.83,
+        rain=2.47,
+        snow=4.28,
+        weather_main="Clear",
+        weather_desc="clear sky",
+        collected_at=datetime.fromisoformat("2026-03-20 21:33:45.862527"),
+    )
+
+
+@pytest.fixture
+def sample_hf() -> HourlyForecast:
+    return HourlyForecast(
+        city="Sarajevo",
+        state="Federation of B&H",
+        country="Bosnia Herzegovina",
+        timezone="Europe/Sarajevo",
+        latitude=43.8519774,
+        longitude=18.3866868,
+        forecast_for=datetime.fromisoformat("2026-03-20 21:00:00"),
+        temperature=4.36,
+        feels_like=2.08,
+        pressure=1021,
+        humidity=72,
+        dew_point=-0.21,
+        uvi=0,
+        clouds=0,
+        visibility=10000,
+        wind_speed=2.57,
+        wind_direction=210,
         wind_gust=6.83,
         rain=2.47,
         snow=4.28,

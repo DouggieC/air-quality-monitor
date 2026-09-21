@@ -10,8 +10,9 @@ from .models import AirQualityReading, DailyForecast, HourlyForecast, WeatherRea
 from .parser import AirQualityParser, DailyForecastParser, HourlyForecastParser
 from .pipeline import PipelineRunner
 from .storage import CSVStorage, DBStorage, JSONStorage
+from .storage_factory import StorageFactory
 
-
+'''
 def run_app():
     logger = logging.getLogger(__name__)
     logger.debug("Executing method")
@@ -96,6 +97,8 @@ def run_app():
     raw_storage.save(city_data, base_filename)
     """
 
+'''
+
 
 def run_pipeline():
 
@@ -124,6 +127,13 @@ def run_pipeline():
     logger.debug(f"JSON filepath: {we_json_filepath}")
     we_json_storage = JSONStorage(we_json_filepath, WeatherReading)
 
+    # Set up storage
+    sf = StorageFactory(Config)
+    aq_csv_storage, aq_db_storage = sf.get_storage(AirQualityReading)
+    hourly_csv_storage, hourly_db_storage = sf.get_storage(HourlyForecast)
+    daily_csv_storage, daily_db_storage = sf.get_storage(DailyForecast)
+
+    """
     # If we're storing data in CSV files, set them now.
     if Config.USE_CSV:
         aq_csv_filepath = Path(Config.DATA_DIR / "aqi_history.csv")
@@ -152,6 +162,7 @@ def run_pipeline():
         aq_db_storage = None
         hourly_db_storage = None
         daily_db_storage = None
+    """
 
     # All set up. Let's run the pipeline!
     runner = PipelineRunner(
