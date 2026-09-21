@@ -242,7 +242,6 @@ class DBStorage(BaseStorage):
                     self.logger.debug(f"Localising column {col} to UTC")
                     df[col] = df[col].dt.tz_localize("UTC")
 
-        print(f"DF returned from DB read: {df.columns}")
         return df
 
 
