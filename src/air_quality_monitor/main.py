@@ -3,13 +3,11 @@ from pathlib import Path
 
 from .client import AirQualityClient, WeatherClient
 from .config import Config
-from .database import Database
-from .db_models import DBAirQualityReading, DBDailyForecast, DBHourlyForecast
 from .logger import setup_logging
 from .models import AirQualityReading, DailyForecast, HourlyForecast, WeatherReading
 from .parser import AirQualityParser, DailyForecastParser, HourlyForecastParser
 from .pipeline import PipelineRunner
-from .storage import CSVStorage, DBStorage, JSONStorage
+from .storage import JSONStorage
 from .storage_factory import StorageFactory
 
 '''
@@ -132,37 +130,6 @@ def run_pipeline():
     aq_csv_storage, aq_db_storage = sf.get_storage(AirQualityReading)
     hourly_csv_storage, hourly_db_storage = sf.get_storage(HourlyForecast)
     daily_csv_storage, daily_db_storage = sf.get_storage(DailyForecast)
-
-    """
-    # If we're storing data in CSV files, set them now.
-    if Config.USE_CSV:
-        aq_csv_filepath = Path(Config.DATA_DIR / "aqi_history.csv")
-        aq_csv_storage = CSVStorage(aq_csv_filepath, AirQualityReading)
-
-        hourly_csv_filepath = Path(Config.DATA_DIR / "hourly_forecast.csv")
-        hourly_csv_storage = CSVStorage(hourly_csv_filepath, HourlyForecast)
-
-        daily_csv_filepath = Path(Config.DATA_DIR / "daily_forecast.csv")
-        daily_csv_storage = CSVStorage(daily_csv_filepath, DailyForecast)
-    else:
-        aq_csv_storage = None
-        hourly_csv_storage = None
-        daily_csv_storage = None
-
-    # If we're storing data in a DB, set them now.
-    if Config.USE_DB:
-        db = Database(Config.get_db_url())
-        db.sync_cities(cities)
-
-        aq_db_storage = DBStorage(db.engine, DBAirQualityReading)
-        hourly_db_storage = DBStorage(db.engine, DBHourlyForecast)
-        daily_db_storage = DBStorage(db.engine, DBDailyForecast)
-    else:
-        db = None
-        aq_db_storage = None
-        hourly_db_storage = None
-        daily_db_storage = None
-    """
 
     # All set up. Let's run the pipeline!
     runner = PipelineRunner(
