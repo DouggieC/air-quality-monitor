@@ -212,10 +212,19 @@ class DBStorage(BaseStorage):
             raise
 
     def read(self) -> pd.DataFrame:
-        # Implement database fetching logic here
+        self.logger.debug("Executing method")
+        self.logger.info("Reading from DB")
 
         try:
-            query = select(self.model_class, DBCity.timezone).join(DBCity)
+            query = select(
+                self.model_class,
+                DBCity.city,
+                DBCity.state,
+                DBCity.country,
+                DBCity.latitude,
+                DBCity.longitude,
+                DBCity.timezone,
+            ).join(DBCity)
             df = pd.read_sql(query, self.engine)
         except Exception as e:
             self.logger.error(f"Error reading from database: {e}")
@@ -233,6 +242,7 @@ class DBStorage(BaseStorage):
                     self.logger.debug(f"Localising column {col} to UTC")
                     df[col] = df[col].dt.tz_localize("UTC")
 
+        print(f"DF returned from DB read: {df.columns}")
         return df
 
 
