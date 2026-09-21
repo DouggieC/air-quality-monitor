@@ -7,7 +7,7 @@ from pathlib import Path
 
 import jsonlines
 import pandas as pd
-from sqlalchemy import Engine, select
+from sqlalchemy import DateTime, Engine, select
 from sqlalchemy.orm import Session
 
 from .db_models import Base, DBCity
@@ -42,7 +42,6 @@ class FileStorage(BaseStorage):
         dates = [f.name for f in fields(self.model_class) if f.type == datetime]
         self.logger.debug(f"Datetime columns: {dates}")
         return dates
-        #return [f.name for f in fields(self.model_class) if f.type == datetime]
 
 
 class CSVStorage(FileStorage):
@@ -88,9 +87,10 @@ class CSVStorage(FileStorage):
 
         # Make sure datetime objects are correctly typed
         for col in self._get_datetime_cols():
-            if df[col].dtype != 'datetime64':
-                df[col] = pd.to_datetime(df[col], utc=True, format='ISO8601')
-
+            print(f"Checking column {col} for datetime type")
+            if not pd.api.types.is_datetime64_any_dtype(df[col]):
+                self.logger.debug(f"Converting column {col} to datetime")
+                df[col] = pd.to_datetime(df[col], utc=True, format="ISO8601")
 
         self.logger.debug(f"DataFrame created:\n{df}")
         return df
@@ -221,9 +221,17 @@ class DBStorage(BaseStorage):
             self.logger.error(f"Error reading from database: {e}")
             raise
 
-        for col in df.select_dtypes(include="datetime64"):
-            if df[col].dt.tz is None:
-                df[col] = df[col].dt.tz_localize("UTC")
+        # Get datetime columns and ensure they are timezone-aware and correctly typed
+        datetime_cols = [c.name for c in self.model_class.__table__.columns if isinstance(c.type, DateTime)]
+
+        for col in datetime_cols:
+            if col in df.columns:
+                if not pd.api.types.is_datetime64_any_dtype(df[col]):
+                    self.logger.debug(f"Converting column {col} to datetime")
+                    df[col] = pd.to_datetime(df[col], utc=True, format="ISO8601")
+                elif df[col].dt.tz is None:
+                    self.logger.debug(f"Localising column {col} to UTC")
+                    df[col] = df[col].dt.tz_localize("UTC")
 
         return df
 
