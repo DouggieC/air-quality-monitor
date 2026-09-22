@@ -27,34 +27,22 @@ class FeatureEngineer:
         self.logger.debug("Sorting AQI dataframe by city and pollutant_timestamp")
         aqi_df = aqi_df.sort_values(by=["city", "pollutant_timestamp"])
 
-        # Create AQI lag & rolling features
-        self.logger.debug("Creating AQI lag and rolling features")
-        aqi_df = self._create_lag_features(aqi_df)
-        aqi_df = self._create_rolling_features(aqi_df)
-
         self.logger.debug("Joining AQI and weather dataframes on city and timestamp")
         joined_df = pd.merge(
             aqi_df,
             we_df,
             left_on=["city", "pollutant_timestamp"],
-            right_on=["city", "collected_at"],
+            right_on=["city", "forecast_for"],
             how="inner",
             suffixes=("_aqi", "_we"),
         )
 
-        # Work out the horizon and other temporal features for each row,
-        # plus OHE of categoricals
+        # Create AQI lag & rolling features
+        self.logger.debug("Creating engineered features")
+        joined_df = self._create_lag_features(joined_df, aqi_df)
+        joined_df = self._create_rolling_features(joined_df, aqi_df)
         joined_df = self._create_temporal_features(joined_df)
         joined_df = self._encode_categoricals(joined_df)
-
-        """
-        joined_df["horizon"] = (joined_df["forecast_for"] - joined_df["collected_at_we"]) / pd.Timedelta(
-            hours=1
-        )
-        joined_df["hour"] = joined_df["forecast_for"].dt.hour
-        joined_df["day_of_week"] = joined_df["forecast_for"].dt.dayofweek
-        joined_df["month"] = joined_df["forecast_for"].dt.month
-        """
 
         # Drop unnecessary columns
         joined_df = joined_df.drop(
@@ -89,10 +77,35 @@ class FeatureEngineer:
 
         return joined_df
 
-    def _create_lag_features(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _create_lag_features(self, df: pd.DataFrame, aqi_df: pd.DataFrame) -> pd.DataFrame:
         """Assumes df is sorted by city and pollutant_timestamp"""
         self.logger.debug("Executing method")
 
+        # Keep only columns needed for lookup
+        aqi_lookup = aqi_df[["city", "pollutant_timestamp", "aqi"]].copy()
+
+        lags = [0, 1, 2, 4, 8, 12, 24, 48]
+        for lag in lags:
+            # Calculate the time we want to look up
+            df["_lookup_time"] = df["collected_at_we"] - pd.Timedelta(hours=lag)
+
+            # Rename AQI column to avoid conflicts
+            lookup = aqi_lookup.rename(
+                columns={"aqi": f"aqi_lag_{lag}h", "pollutant_timestamp": f"_pt_{lag}"}
+            )
+
+            # Merge to get the AQI at that time
+            df = df.merge(
+                lookup, left_on=["city", "_lookup_time"], right_on=["city", f"_pt_{lag}"], how="left"
+            )
+
+            # Drop temp columns
+            df = df.drop(columns=["_lookup_time", f"_pt_{lag}"])
+
+        # Rename lag 0 to current for easy reading
+        df = df.rename(columns={"aqi_lag_0h": "aqi_current"})
+
+        """
         # Group by city and create lag features
         # aqi_lag_1h is measured AQI one hour ago, etc.
         df["aqi_lag_1h"] = df.groupby("city")["aqi"].shift(1)
@@ -102,20 +115,50 @@ class FeatureEngineer:
         df["aqi_lag_12h"] = df.groupby("city")["aqi"].shift(12)
         df["aqi_lag_24h"] = df.groupby("city")["aqi"].shift(24)
         df["aqi_lag_48h"] = df.groupby("city")["aqi"].shift(48)
+        """
 
         return df
 
-    def _create_rolling_features(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Assumes df is sorted by city and pollutant_timestamp"""
+    def _create_rolling_features(self, df: pd.DataFrame, aqi_df: pd.DataFrame) -> pd.DataFrame:
         self.logger.debug("Executing method")
 
-        # Group by city and create rolling features
+        # Sort, group by city and create rolling features
         # aqi_rolling_mean_6h: Mean AQI over the last 6 hours
         # aqi_rolling_std_6h: Std deviation over the last 6 hours
         # aqi_rolling_mean_24h: Mean AQI over the last 24 hours
-        df["aqi_rolling_mean_6h"] = df.groupby("city")["aqi"].rolling(6).mean().reset_index(0, drop=True)
-        df["aqi_rolling_std_6h"] = df.groupby("city")["aqi"].rolling(6).std().reset_index(0, drop=True)
-        df["aqi_rolling_mean_24h"] = df.groupby("city")["aqi"].rolling(24).mean().reset_index(0, drop=True)
+        aqi_df = aqi_df.sort_values(["city", "pollutant_timestamp"])
+        aqi_df["aqi_rolling_mean_6h"] = (
+            aqi_df.groupby("city")["aqi"].rolling(6).mean().reset_index(0, drop=True)
+        )
+        aqi_df["aqi_rolling_std_6h"] = (
+            aqi_df.groupby("city")["aqi"].rolling(6).std().reset_index(0, drop=True)
+        )
+        aqi_df["aqi_rolling_mean_24h"] = (
+            aqi_df.groupby("city")["aqi"].rolling(24).mean().reset_index(0, drop=True)
+        )
+
+        # Merge into joined df
+        aqi_lookup = aqi_df[
+            [
+                "city",
+                "pollutant_timestamp",
+                "aqi_rolling_mean_6h",
+                "aqi_rolling_std_6h",
+                "aqi_rolling_mean_24h",
+            ]
+        ]
+
+        aqi_lookup = aqi_lookup.rename(columns={"pollutant_timestamp": "_pt_rolling"})
+
+        df = df.merge(
+            aqi_lookup,
+            left_on=["city", "collected_at_we"],
+            right_on=["city", "_pt_rolling"],
+            how="left",
+        )
+
+        # Drop temp column
+        df = df.drop(columns=["_pt_rolling"])
 
         return df
 
