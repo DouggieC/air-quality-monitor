@@ -2,7 +2,7 @@
 
 # Used to execute the app from cron
 
-APP_DIR="/home/doug/projects/air-quality-monitor"
+APP_DIR="/home/doug/apps/air-quality-monitor"
 PYTHON="$APP_DIR/.venv/bin/python"
 
 # Get environment variables
