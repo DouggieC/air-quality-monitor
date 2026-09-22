@@ -17,10 +17,6 @@ class FeatureEngineer:
         aqi_df = self.aqi_storage.read()
         we_df = self.weather_storage.read()
 
-        # Drop unnecessary columns (only need location data once)
-        aqi_df = aqi_df.drop(["id"], axis=1)
-        we_df = we_df.drop(["id", "state", "country", "latitude", "longitude", "timezone"], axis=1)
-
         # Ensure joining timestamps are on the hour
         self.logger.debug("Flooring timestamps to the hour for joining")
         aqi_df["pollutant_timestamp"] = aqi_df["pollutant_timestamp"].dt.floor("h")
@@ -46,9 +42,49 @@ class FeatureEngineer:
             suffixes=("_aqi", "_we"),
         )
 
-        # Work out the horizon for each row
+        # Work out the horizon and other temporal features for each row,
+        # plus OHE of categoricals
+        joined_df = self._create_temporal_features(joined_df)
+        joined_df = self._encode_categoricals(joined_df)
+
+        """
         joined_df["horizon"] = (joined_df["forecast_for"] - joined_df["collected_at_we"]) / pd.Timedelta(
             hours=1
+        )
+        joined_df["hour"] = joined_df["forecast_for"].dt.hour
+        joined_df["day_of_week"] = joined_df["forecast_for"].dt.dayofweek
+        joined_df["month"] = joined_df["forecast_for"].dt.month
+        """
+
+        # Drop unnecessary columns
+        joined_df = joined_df.drop(
+            [
+                "id_aqi",
+                "pollutant_timestamp",
+                "temperature_aqi",
+                "humidity_aqi",
+                "pressure_aqi",
+                "wind_speed_aqi",
+                "wind_direction_aqi",
+                "weather_timestamp",
+                "collected_at_aqi",
+                "state_aqi",
+                "country_aqi",
+                "latitude_aqi",
+                "longitude_aqi",
+                "timezone_aqi",
+                "id_we",
+                "forecast_for",
+                "weather_main",
+                "weather_desc",
+                "collected_at_we",
+                "state_we",
+                "country_we",
+                "latitude_we",
+                "longitude_we",
+                "timezone_we",
+            ],
+            axis=1,
         )
 
         return joined_df
@@ -80,5 +116,24 @@ class FeatureEngineer:
         df["aqi_rolling_mean_6h"] = df.groupby("city")["aqi"].rolling(6).mean().reset_index(0, drop=True)
         df["aqi_rolling_std_6h"] = df.groupby("city")["aqi"].rolling(6).std().reset_index(0, drop=True)
         df["aqi_rolling_mean_24h"] = df.groupby("city")["aqi"].rolling(24).mean().reset_index(0, drop=True)
+
+        return df
+
+    def _create_temporal_features(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Assumes df is sorted by city"""
+        self.logger.debug("Executing method")
+
+        df["horizon"] = (df["forecast_for"] - df["collected_at_we"]) / pd.Timedelta(hours=1)
+        df["hour"] = df["forecast_for"].dt.hour
+        df["day_of_week"] = df["forecast_for"].dt.dayofweek
+        df["month"] = df["forecast_for"].dt.month
+
+        return df
+
+    def _encode_categoricals(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Performs one-hot encoding of categorical variables"""
+        self.logger.debug("Executing method")
+
+        df = pd.get_dummies(df, columns=["city", "main_pollutant"])
 
         return df
