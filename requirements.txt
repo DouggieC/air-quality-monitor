@@ -9,3 +9,6 @@ pytest
 matplotlib
 nbstripout
 psycopg2-binary
+lightgbm
+xgboost
+scikit-learn

@@ -1,0 +1,5 @@
+# Ignore all generated files
+*
+
+# Keep this directory in git
+!.gitignore

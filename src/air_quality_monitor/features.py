@@ -65,7 +65,6 @@ class FeatureEngineer:
                 "forecast_for",
                 "weather_main",
                 "weather_desc",
-                "collected_at_we",
                 "state_we",
                 "country_we",
                 "latitude_we",
@@ -75,6 +74,8 @@ class FeatureEngineer:
             axis=1,
         )
 
+        # Rename for neatness
+        joined_df = joined_df.rename(columns={"collected_at_we": "collected_at"})
         return joined_df
 
     def _create_lag_features(self, df: pd.DataFrame, aqi_df: pd.DataFrame) -> pd.DataFrame:

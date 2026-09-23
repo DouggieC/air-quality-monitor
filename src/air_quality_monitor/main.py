@@ -168,7 +168,7 @@ def run_feature_engineering():
     # Run feature engineering
     engineer = FeatureEngineer(aqi_storage, we_storage)
     training_df = engineer.build()
-    training_df.to_csv(Config.DATA_DIR / "training_data.csv", index=False)
+    training_df.to_csv(Config.TRAINING_DATA_PATH, index=False)
 
 
 def main():
