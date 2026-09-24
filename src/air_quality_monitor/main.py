@@ -1,7 +1,5 @@
 import argparse
 import logging
-
-# import sys
 from pathlib import Path
 
 from .client import AirQualityClient, WeatherClient
@@ -118,24 +116,13 @@ def main():
     logger.debug(f"IS_PRODUCTION:\t{Config.IS_PRODUCTION}")
     logger.debug(f"REQUEST_TIMEOUT:\t{Config.REQUEST_TIMEOUT}")
 
-    """
-    if len(sys.argv) > 1 and sys.argv[1] == "features":
-        logger.info("Air Quality Monitor feature engineering pipeline started")
-        run_feature_engineering()
-        logger.info("Air Quality Monitor feature engineering pipeline finished")
-    else:
-        logger.info("Air Quality Monitor data collection pipeline started")
-        run_data_collection()
-        logger.info("Air Quality Monitor data collection pipeline finished")
-    """
-
     arg_parser = argparse.ArgumentParser(description="Air Quality Monitor")
     arg_parser.add_argument("command", choices=["collect", "prepare", "train"])
     args = arg_parser.parse_args()
 
     match args.command:
         case "collect":
-            run_pipeline()
+            run_data_collection()
         case "prepare":
             run_feature_engineering()
         case "train":
