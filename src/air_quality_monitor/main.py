@@ -3,104 +3,17 @@ import sys
 from pathlib import Path
 
 from .client import AirQualityClient, WeatherClient
+from .collector import DataCollector
 from .config import Config
 from .features import FeatureEngineer
 from .logger import setup_logging
 from .models import AirQualityReading, DailyForecast, HourlyForecast, WeatherReading
 from .parser import AirQualityParser, DailyForecastParser, HourlyForecastParser
-from .pipeline import PipelineRunner
 from .storage import JSONStorage
 from .storage_factory import StorageFactory
 
-'''
-def run_app():
-    logger = logging.getLogger(__name__)
-    logger.debug("Executing method")
 
-    # Ensure data directory exists
-    Config.DATA_DIR.mkdir(parents=True, exist_ok=True)
-
-    # Initialize API clients
-    # aqc = AirQualityClient(Config.IQAIR_API_KEY, Config.IQAIR_BASE_URL)
-    wc = WeatherClient(Config.OWM_API_KEY, Config.OWM_ONECALL_BASE_URL, Config.OWM_GEO_BASE_URL)
-
-    aq_csv_filepath = Path(Config.DATA_DIR / "aqi_history.csv")
-    aq_csv_storage = CSVStorage(aq_csv_filepath, AirQualityReading)
-
-    hourly_csv_filepath = Path(Config.DATA_DIR / "hourly_forecast.csv")
-    hourly_csv_storage = CSVStorage(hourly_csv_filepath, HourlyForecast)
-    daily_csv_filepath = Path(Config.DATA_DIR / "daily_forecast.csv")
-    daily_csv_storage = CSVStorage(daily_csv_filepath, DailyForecast)
-
-    db = Database(Config.get_db_url())
-    aq_db_storage = DBStorage(db.engine, DBAirQualityReading)
-    hourly_db_storage = DBStorage(db.engine, DBHourlyForecast)
-    daily_db_storage = DBStorage(db.engine, DBDailyForecast)
-
-    df_aq_csv = aq_csv_storage.read()
-    print(f"AQI CSV:\n{df_aq_csv}")
-    df_hourly_csv = hourly_csv_storage.read()
-    print(f"OWM Hourly CSV:\n{df_hourly_csv}")
-    df_daily_csv = daily_csv_storage.read()
-    print(f"OWM Daily CSV:\n{df_daily_csv}")
-    df_aq_db = aq_db_storage.read()
-    print(f"AQI DB:\n{df_aq_db}")
-    df_hourly_db = hourly_db_storage.read()
-    print(f"OWM Hourly DB:\n{df_hourly_db}")
-    df_daily_db = daily_db_storage.read()
-    print(f"OWM Daily DB:\n{df_daily_db}")
-    exit()
-
-    # Get coordinates for Sarajevo
-    cities = Config.load_cities()
-    logger.debug(f"Cities:\t{cities}")
-
-    for city in cities:
-        # logger.debug(f'Getting coordinates for {city.city}')
-        coord_data = wc.get_coordinates(city)
-        lat = coord_data.get("lat")
-        lon = coord_data.get("lon")
-        logger.debug(f"Getting weather data for {city}")
-        # weather_data = wc.get_current_weather(city=city)
-        # logger.debug(f'Getting AQI data for {city.city}')
-        # aqi_data = aqc.get_city_data(city)
-
-        print(f"{city}:\t{lat}, {lon}")
-
-    exit()
-
-    """
-        # Get weather for Sarajevo by coords
-        print('Getting weather data')
-        weather_data = wc.get_current_weather(43.8563, 18.4131)
-        #print(weather_data)
-        """
-    """
-    #print(aqc.get_all_countries())
-    print(aqc.get_all_states('Switzerland'))
-    cities = aqc.get_all_cities('Switzerland', 'Geneva')
-    for city in cities:
-        print(f'{city}')
-    """
-
-    """city = 'Sarajevo'
-    state = 'Federation of B&H'
-    country = 'Bosnia Herzegovina'
-    city_data = aqc.get_city_data(city, state, country)
-    print(f'\n\nAir quality data for {city}:')
-    #print(json.dumps(city_data, indent=4))
-    print(city_data)
-
-    # Store raw JSON data to provide history
-    raw_storage = JSONStorage()
-    base_filename = f'{config.DATA_DIR}/{city}_raw_history'
-    raw_storage.save(city_data, base_filename)
-    """
-
-'''
-
-
-def run_pipeline():
+def run_data_collection():
 
     logger = logging.getLogger(__name__)
     logger.debug("Executing method")
@@ -133,8 +46,8 @@ def run_pipeline():
     hourly_csv_storage, hourly_db_storage = sf.get_storage(HourlyForecast)
     daily_csv_storage, daily_db_storage = sf.get_storage(DailyForecast)
 
-    # All set up. Let's run the pipeline!
-    runner = PipelineRunner(
+    # All set up. Let's run the data collection pipeline!
+    runner = DataCollector(
         aqc,
         wc,
         aq_parser,
@@ -200,7 +113,7 @@ def main():
         logger.info("Air Quality Monitor feature engineering pipeline finished")
     else:
         logger.info("Air Quality Monitor data collection pipeline started")
-        run_pipeline()
+        run_data_collection()
         logger.info("Air Quality Monitor data collection pipeline finished")
 
 

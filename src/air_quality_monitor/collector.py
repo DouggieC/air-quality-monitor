@@ -8,7 +8,7 @@ from .parser import ResponseParser
 from .storage import JSONStorage
 
 
-class PipelineRunner:
+class DataCollector:
     def __init__(
         self,
         aqc: AirQualityClient,
@@ -75,7 +75,6 @@ class PipelineRunner:
                 # Write to the DB if in use
                 if self.aq_db_storage:
                     self.aq_db_storage.save(parsed_aq_data, city)
-
 
             except APIError as e:
                 self.logger.error(f"Error fetching air quality data for {city.city}: {e}")
