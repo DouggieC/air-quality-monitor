@@ -1,5 +1,7 @@
-from datetime import datetime
+from dataclasses import asdict
+from datetime import datetime, timedelta
 
+import pandas as pd
 import pytest
 
 from air_quality_monitor.models import AirQualityReading, City, HourlyForecast, WeatherReading
@@ -96,9 +98,54 @@ def sample_hf() -> HourlyForecast:
         wind_speed=2.57,
         wind_direction=210,
         wind_gust=6.83,
+        pop=0.37,
         rain=2.47,
         snow=4.28,
         weather_main="Clear",
         weather_desc="clear sky",
         collected_at=datetime.fromisoformat("2026-03-20 21:33:45.862527"),
     )
+
+
+@pytest.fixture
+def sample_aqi_df(sample_aqr) -> pd.DataFrame:
+    base_time = datetime(2026, 3, 20, 21, 33, 46)  # noqa: DTZ001
+    rows = []
+    for hour in range(72):
+        for city in ["Sarajevo", "London"]:
+            row = asdict(sample_aqr)
+            row["id_aqi"] = 0
+            row["city"] = city
+            row["pollutant_timestamp"] = base_time + timedelta(hours=hour)
+            row["aqi"] = hour + (10 if city == "London" else 0)
+            rows.append(row)
+
+    return pd.DataFrame(rows)
+
+
+@pytest.fixture
+def sample_hourly_df(sample_hf) -> pd.DataFrame:
+    base_time = datetime(2026, 3, 20, 21, 33, 46)  # noqa: DTZ001
+    horizons = [0, 1, 2, 4, 8, 12, 24, 48]
+    rows = []
+
+    for hour in range(72):
+        collected_at = base_time + timedelta(hours=hour)
+        for city in ["Sarajevo", "London"]:
+            for h in horizons:
+                row = asdict(sample_hf)
+                row["id_we"] = 0
+                row["city"] = city
+                row["collected_at"] = collected_at
+                row["forecast_for"] = collected_at + timedelta(hours=h)
+                rows.append(row)
+
+    return pd.DataFrame(rows)
+
+
+class MockStorage:
+    def __init__(self, df: pd.DataFrame):
+        self.df = df
+
+    def read(self) -> pd.DataFrame:
+        return self.df

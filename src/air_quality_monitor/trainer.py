@@ -55,7 +55,7 @@ class Trainer:
             self.logger.info(f"Predictions within 20 AQI points of actual:\t{within_20}")
 
             self.logger.info(f"Saving {name}")
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  # noqa: DTZ005
             filename = f"{name}_{timestamp}.joblib"
             joblib.dump(model, Config.MODELS_DIR / filename)
 
