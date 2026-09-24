@@ -21,6 +21,7 @@ class Trainer:
     def train(self):
         self.logger.debug("Executing Method")
 
+        self.logger.debug("Loading training data")
         X_train, y_train, X_test, y_test = self._load_data()
 
         models = {
