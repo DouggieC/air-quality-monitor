@@ -130,10 +130,13 @@ def main():
 
     match args.command:
         case "collect":
+            logger.info("Running data collection")
             run_data_collection()
         case "prepare":
+            logger.info("Engineering features")
             run_feature_engineering()
         case "train":
+            logger.info("Training models")
             run_training()
         case "tune":
             run_tuning()
