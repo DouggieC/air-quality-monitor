@@ -93,6 +93,14 @@ def run_training():
     trainer.train()
 
 
+def run_tuning():
+    logger = logging.getLogger(__name__)
+    logger.debug("Executing method")
+
+    trainer = Trainer()
+    trainer.tune()
+
+
 def main():
 
     # Start logging
@@ -117,7 +125,7 @@ def main():
     logger.debug(f"REQUEST_TIMEOUT:\t{Config.REQUEST_TIMEOUT}")
 
     arg_parser = argparse.ArgumentParser(description="Air Quality Monitor")
-    arg_parser.add_argument("command", choices=["collect", "prepare", "train"])
+    arg_parser.add_argument("command", choices=["collect", "prepare", "train", "tune"])
     args = arg_parser.parse_args()
 
     match args.command:
@@ -127,6 +135,8 @@ def main():
             run_feature_engineering()
         case "train":
             run_training()
+        case "tune":
+            run_tuning()
 
 
 if __name__ == "__main__":
