@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import pytest
 
+from air_quality_monitor.features import FeatureEngineer
 from air_quality_monitor.models import AirQualityReading, City, HourlyForecast, WeatherReading
 
 
@@ -141,6 +142,14 @@ def sample_hourly_df(sample_hf) -> pd.DataFrame:
                 rows.append(row)
 
     return pd.DataFrame(rows)
+
+
+@pytest.fixture
+def sample_training_df(sample_aqi_df, sample_hourly_df):
+    aqi_storage = MockStorage(sample_aqi_df)
+    weather_storage = MockStorage(sample_hourly_df)
+    engineer = FeatureEngineer(aqi_storage, weather_storage)
+    return engineer.build()
 
 
 class MockStorage:
