@@ -139,6 +139,7 @@ def main():
             logger.info("Training models")
             run_training()
         case "tune":
+            logger.info("Tuning hyperparamters")
             run_tuning()
 
 
