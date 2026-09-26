@@ -23,27 +23,40 @@ class FeatureEngineer:
         we_df["collected_at"] = we_df["collected_at"].dt.floor("h")
         we_df["forecast_for"] = we_df["forecast_for"].dt.floor("h")
 
-        # Sort the dataframeby city and pollutant_timestamp ready for creating engineered features
+        # Sort the dataframe by city and pollutant_timestamp ready for creating engineered features
         self.logger.debug("Sorting AQI dataframe by city and pollutant_timestamp")
         aqi_df = aqi_df.sort_values(by=["city", "pollutant_timestamp"])
 
-        self.logger.debug("Joining AQI and weather dataframes on city and timestamp")
-        joined_df = pd.merge(
-            aqi_df,
-            we_df,
-            left_on=["city", "pollutant_timestamp"],
-            right_on=["city", "forecast_for"],
-            how="inner",
-            suffixes=("_aqi", "_we"),
-        )
+        cities = aqi_df["city"].unique()
+        results = []
 
-        # Create AQI lag & rolling features
-        self.logger.debug("Creating engineered features")
-        joined_df = self._create_lag_features(joined_df, aqi_df)
-        joined_df = self._create_rolling_features(joined_df, aqi_df)
-        joined_df = self._create_temporal_features(joined_df)
-        joined_df = self._create_weather_trends(joined_df)
-        joined_df = self._encode_categoricals(joined_df)
+        for city in cities:
+            self.logger.debug(f"Joining AQI and weather dataframes for {city} on timestamp")
+
+            _aqi_df = aqi_df[aqi_df["city"] == city]
+            _we_df = we_df[we_df["city"] == city]
+            _we_df = _we_df.drop(columns=["city"])
+
+            _joined_df = pd.merge(
+                _aqi_df,
+                _we_df,
+                left_on=["pollutant_timestamp"],
+                right_on=["forecast_for"],
+                how="inner",
+                suffixes=("_aqi", "_we"),
+            )
+
+            # Create AQI lag & rolling features
+            self.logger.debug(f"Creating engineered features for {city}")
+            _joined_df = self._create_lag_features(_joined_df, _aqi_df)
+            _joined_df = self._create_rolling_features(_joined_df, _aqi_df)
+            _joined_df = self._create_temporal_features(_joined_df)
+            _joined_df = self._create_weather_trends(_joined_df)
+            _joined_df = self._encode_categoricals(_joined_df)
+
+            results.append(_joined_df)
+
+        joined_df = pd.concat(results, ignore_index=True)
 
         # Drop unnecessary columns
         joined_df = joined_df.drop(
