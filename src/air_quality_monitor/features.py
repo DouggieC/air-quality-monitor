@@ -176,7 +176,7 @@ class FeatureEngineer:
 
         current = df[df["horizon"] == 0][
             ["city", "collected_at_we", "temperature_we", "pressure_we", "humidity_we"]
-        ]
+        ].drop_duplicates(subset=["city", "collected_at_we"])
 
         trends = [
             # source column, lag hours, new column
