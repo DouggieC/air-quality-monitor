@@ -42,6 +42,7 @@ class FeatureEngineer:
         joined_df = self._create_lag_features(joined_df, aqi_df)
         joined_df = self._create_rolling_features(joined_df, aqi_df)
         joined_df = self._create_temporal_features(joined_df)
+        joined_df = self._create_weather_trends(joined_df)
         joined_df = self._encode_categoricals(joined_df)
 
         # Drop unnecessary columns
@@ -106,18 +107,6 @@ class FeatureEngineer:
         # Rename lag 0 to current for easy reading
         df = df.rename(columns={"aqi_lag_0h": "aqi_current"})
 
-        """
-        # Group by city and create lag features
-        # aqi_lag_1h is measured AQI one hour ago, etc.
-        df["aqi_lag_1h"] = df.groupby("city")["aqi"].shift(1)
-        df["aqi_lag_2h"] = df.groupby("city")["aqi"].shift(2)
-        df["aqi_lag_4h"] = df.groupby("city")["aqi"].shift(4)
-        df["aqi_lag_8h"] = df.groupby("city")["aqi"].shift(8)
-        df["aqi_lag_12h"] = df.groupby("city")["aqi"].shift(12)
-        df["aqi_lag_24h"] = df.groupby("city")["aqi"].shift(24)
-        df["aqi_lag_48h"] = df.groupby("city")["aqi"].shift(48)
-        """
-
         return df
 
     def _create_rolling_features(self, df: pd.DataFrame, aqi_df: pd.DataFrame) -> pd.DataFrame:
@@ -179,5 +168,41 @@ class FeatureEngineer:
         self.logger.debug("Executing method")
 
         df = pd.get_dummies(df, columns=["city", "main_pollutant"])
+
+        return df
+
+    def _create_weather_trends(self, df: pd.DataFrame) -> pd.DataFrame:
+        self.logger.debug("Executing method")
+
+        current = df[df["horizon"] == 0][
+            ["city", "collected_at_we", "temperature_we", "pressure_we", "humidity_we"]
+        ]
+
+        trends = [
+            # source column, lag hours, new column
+            ("temperature_we", 24, "temp_change_24h"),
+            ("pressure_we", 6, "pressure_change_6h"),
+            ("pressure_we", 24, "pressure_change_24h"),
+            ("humidity_we", 24, "humidity_change_24h"),
+        ]
+
+        for source_col, lag, new_col in trends:
+            self.logger.debug(f"Processing {source_col}, {lag}, {new_col}")
+            # Calculate the time we want to look up
+            df["_lookup_time"] = df["collected_at_we"] - pd.Timedelta(hours=lag)
+
+            # Rename weather feature & timestamp column to avoid conflicts
+            lookup = current[["city", "collected_at_we", source_col]].rename(
+                columns={"collected_at_we": f"_ca_{lag}", source_col: f"_past_{source_col}"}
+            )
+
+            df = df.merge(
+                lookup, left_on=["city", "_lookup_time"], right_on=["city", f"_ca_{lag}"], how="left"
+            )
+
+            df[new_col] = df[source_col] - df[f"_past_{source_col}"]
+
+            # Drop temp columns
+            df = df.drop(columns=["_lookup_time", f"_ca_{lag}", f"_past_{source_col}"])
 
         return df
