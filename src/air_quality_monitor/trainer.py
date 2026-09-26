@@ -26,53 +26,69 @@ class Trainer:
         self.logger.debug("Loading training data")
         X_train, y_train, _, _, X_test, y_test = self._load_data()
 
+        self.logger.debug("Splitting on horizons")
+        horizon_ranges = {
+            "short": [0, 1, 2],
+            "medium": [4, 8, 12],
+            "long": [24, 28],
+        }
+
         models = {
             "lightgbm": LGBMRegressor(),
             "xgboost": XGBRegressor(),
         }
 
-        for name, model in models.items():
-            self.logger.info(f"Training {name}")
-            model.fit(X_train, y_train)
+        for range_name, horizons in horizon_ranges.items():
+            mask_train = X_train["horizon"].isin(horizons)
+            mask_test = X_test["horizon"].isin(horizons)
 
-            self.logger.info(f"Testing {name}")
-            y_pred = model.predict(X_test)
+            X_train_range = X_train.loc[mask_train]
+            y_train_range = y_train.loc[mask_train]
+            X_test_range = X_test.loc[mask_test]
+            y_test_range = y_test.loc[mask_test]
 
-            self.logger.info(f"Calculating metrics for {name}")
-            rmse = sqrt(mean_squared_error(y_test, y_pred))
-            mae = mean_absolute_error(y_test, y_pred)
-            r2 = r2_score(y_test, y_pred)
+            for name, model in models.items():
+                self.logger.info(f"Training {name} on {range_name} range horizon")
+                model.fit(X_train_range, y_train_range)
 
-            self.logger.info(f"Metrics for {name}")
-            self.logger.info(f"RMSE:\t{rmse}")
-            self.logger.info(f"MAE:\t{mae}")
-            self.logger.info(f"R^2 Score:\t{r2}")
+                self.logger.info(f"Testing {name} on {range_name} range horizon")
+                y_pred_range = model.predict(X_test_range)
 
-            within_5 = (abs(y_test - y_pred) <= 5).mean() * 100
-            within_10 = (abs(y_test - y_pred) <= 10).mean() * 100
-            within_20 = (abs(y_test - y_pred) <= 20).mean() * 100
+                self.logger.info(f"Calculating metrics for {name} on {range_name} range horizon")
+                rmse = sqrt(mean_squared_error(y_test_range, y_pred_range))
+                mae = mean_absolute_error(y_test_range, y_pred_range)
+                r2 = r2_score(y_test_range, y_pred_range)
 
-            self.logger.info(f"Predictions within 5 AQI points of actual:\t{within_5}")
-            self.logger.info(f"Predictions within 10 AQI points of actual:\t{within_10}")
-            self.logger.info(f"Predictions within 20 AQI points of actual:\t{within_20}")
+                self.logger.info(f"Metrics for {name} on {range_name} range horizon")
+                self.logger.info(f"RMSE:\t{rmse}")
+                self.logger.info(f"MAE:\t{mae}")
+                self.logger.info(f"R^2 Score:\t{r2}")
 
-            self.logger.info(f"Saving {name}")
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  # noqa: DTZ005
-            filename = f"{name}_{timestamp}.joblib"
-            joblib.dump(model, Config.MODELS_DIR / filename)
+                within_5 = (abs(y_test_range - y_pred_range) <= 5).mean() * 100
+                within_10 = (abs(y_test_range - y_pred_range) <= 10).mean() * 100
+                within_20 = (abs(y_test_range - y_pred_range) <= 20).mean() * 100
 
-            self.logger.info(f"Saving experiment details for {name}")
-            hyperparams = model.get_params()
-            metrics = {
-                "rmse": rmse,
-                "mae": mae,
-                "r2": r2,
-                "within_5": within_5,
-                "within_10": within_10,
-                "within_20": within_20,
-            }
+                self.logger.info(f"Predictions within 5 AQI points of actual:\t{within_5}")
+                self.logger.info(f"Predictions within 10 AQI points of actual:\t{within_10}")
+                self.logger.info(f"Predictions within 20 AQI points of actual:\t{within_20}")
 
-            self._log_experiment(name, timestamp, hyperparams, metrics)
+                self.logger.info(f"Saving {name} on {range_name} range horizon")
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  # noqa: DTZ005
+                filename = f"{name}_{range_name}_{timestamp}.joblib"
+                joblib.dump(model, Config.MODELS_DIR / filename)
+
+                self.logger.info(f"Saving experiment details for {name} on {range_name} range horizon")
+                hyperparams = model.get_params()
+                metrics = {
+                    "rmse": rmse,
+                    "mae": mae,
+                    "r2": r2,
+                    "within_5": within_5,
+                    "within_10": within_10,
+                    "within_20": within_20,
+                }
+
+                self._log_experiment(f"{name}_{range_name}", timestamp, hyperparams, metrics)
 
     def tune(self):
         self.logger.debug("Executing Method")
@@ -96,11 +112,11 @@ class Trainer:
         search = RandomizedSearchCV(
             LGBMRegressor(),
             param_distributions=param_dist,
-            n_iter=5,
+            n_iter=50,
             cv=5,
             scoring="neg_root_mean_squared_error",
             random_state=42,
-            n_jobs=-1,
+            n_jobs=1,
         )
 
         self.logger.info("Tuning hyperparameters")
