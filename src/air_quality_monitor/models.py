@@ -1,22 +1,21 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
 
 
 @dataclass
 class Reading:
-    pass
-
-
-@dataclass
-class AirQualityReading(Reading):
-    # A dataclass to represent a single air quality reading with all relevant fields
     city: str
     state: str
     country: str
     timezone: str
     latitude: float
     longitude: float
+    collected_at: datetime  # Timestamp when this reading was collected from the API
+
+
+@dataclass
+class AirQualityReading(Reading):
+    # A dataclass to represent a single air quality reading with all relevant fields
     aqi: int  # AQI based on US EPA standard
     main_pollutant: str  # Main pollutant contributing to the AQI
     pollutant_timestamp: datetime  # Timestamp of the pollutant measurement
@@ -27,18 +26,11 @@ class AirQualityReading(Reading):
     wind_direction: int  # Wind direction in degrees
     heat_index: int  # Apparent temperature in Celsius, calculated from temperature and relative humidity
     weather_timestamp: datetime  # Timestamp of the weather measurement
-    collected_at: datetime  # Timestamp when this reading was collected from the API
 
 
 @dataclass
 class WeatherReading(Reading):
     # A dataclass to represent a single weather reading
-    city: str
-    state: str
-    country: str
-    timezone: str
-    latitude: float
-    longitude: float
     dt: datetime  # Observation time (UTC timestamp)
     sunrise: datetime  # Sunrise time (UTC timestamp)
     sunset: datetime  # Sunset time (UTC timestamp)
@@ -57,7 +49,6 @@ class WeatherReading(Reading):
     snow: float  # Snowfall (mm/h)
     weather_main: str  # The main weather (clouds, rain, sun, etc.)
     weather_desc: str  # The weather description ('few clouds', etc.)
-    collected_at: datetime  # Timestamp when this reading was collected from the API
 
 
 @dataclass
@@ -74,14 +65,7 @@ class WeatherAlert(Reading):
 @dataclass
 class Forecast(Reading):
     # A base dataclass to represent an individual weather forecast
-    city: str
-    state: str
-    country: str
-    timezone: str
-    latitude: float
-    longitude: float
     forecast_for: datetime  # Timestamp when the forecast is for
-    collected_at: datetime  # Timestamp when this reading was collected from the API
 
 
 @dataclass
@@ -142,5 +126,5 @@ class City:
     state: str
     country: str
     timezone: str
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
+    latitude: float | None = None
+    longitude: float | None = None
