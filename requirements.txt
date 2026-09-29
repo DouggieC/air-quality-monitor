@@ -1,13 +1,8 @@
 dotenv
 requests
 jsonlines
-dataclasses
-datetime
 pandas
 sqlalchemy
-pytest
-matplotlib
-nbstripout
 psycopg2-binary
 lightgbm
 xgboost
