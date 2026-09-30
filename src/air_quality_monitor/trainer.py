@@ -4,6 +4,7 @@ from math import sqrt
 
 import joblib
 import jsonlines
+import mlflow
 import pandas as pd
 from lightgbm import LGBMRegressor
 from scipy.stats import randint, uniform
@@ -38,6 +39,9 @@ class Trainer:
             "xgboost": XGBRegressor(),
         }
 
+        # Set up MLflow tracing
+        mlflow.set_experiment("aqi_prediction")
+
         for range_name, horizons in horizon_ranges.items():
             mask_train = X_train["horizon"].isin(horizons)
             mask_test = X_test["horizon"].isin(horizons)
@@ -49,6 +53,11 @@ class Trainer:
 
             for name, model in models.items():
                 self.logger.info(f"Training {name} on {range_name} range horizon")
+
+                # Start MLflow run
+                mlflow.start_run(run_name=f"{name}_{range_name}")
+
+                # Train the model
                 model.fit(X_train_range, y_train_range)
 
                 self.logger.info(f"Testing {name} on {range_name} range horizon")
@@ -88,7 +97,14 @@ class Trainer:
                     "within_20": within_20,
                 }
 
+                # Log experiment details with mlflow
+                mlflow.log_params(hyperparams)
+                mlflow.log_metrics(metrics)
+                mlflow.log_artifact(Config.MODELS_DIR / filename)
+
                 self._log_experiment(f"{name}_{range_name}", timestamp, hyperparams, metrics)
+
+                mlflow.end_run()
 
     def tune(self):
         self.logger.debug("Executing Method")

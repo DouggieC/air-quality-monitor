@@ -23,5 +23,5 @@ flock -n 200 || exit 1
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 
 # Execute the job
-$PYTHON -m air_quality_monitor.main >> ${LOG_DIR}/cron_run_${TIMESTAMP}.log 2>&1
+$PYTHON -m air_quality_monitor.main collect >> ${LOG_DIR}/cron_run_${TIMESTAMP}.log 2>&1
 
