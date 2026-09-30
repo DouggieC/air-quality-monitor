@@ -30,7 +30,7 @@ class Trainer:
         data_params = {
             "data_version": "2",
             "data_filename": "training_data_v2.csv",
-            "data_description": "Include wether trend features",
+            "data_description": "Include weather trend features",
             "data_hash": data_hash,
             "n_rows": len(X_train) + len(X_test),
             "n_features": len(X_train.columns),
@@ -89,6 +89,16 @@ class Trainer:
         self.logger.debug("Loading training data")
         X_train, y_train, X_val, y_val, X_test, y_test, data_hash = self._load_data(include_validation=True)
 
+        data_params = {
+            "data_version": "2",
+            "data_filename": "training_data_v2.csv",
+            "data_description": "Evaluating best hyperparam sets",
+            "data_hash": data_hash,
+            "n_rows": len(X_train) + len(X_test),
+            "n_features": len(X_train.columns),
+            "features": ",".join(X_train.columns),
+        }
+
         # Set up MLflow tracing
         mlflow.set_experiment("Model Tuning")
 
@@ -139,6 +149,38 @@ class Trainer:
         self.logger.info(f"Best params (RMSE):\n{best_rmse['params']}")
         self.logger.info(f"Best score (MAE):\t{best_mae['mae']}")
         self.logger.info(f"Best params (MAE):\n{best_mae['params']}")
+
+        X_train_full = pd.concat([X_train, X_val], ignore_index=True)
+        y_train_full = pd.concat([y_train, y_val], ignore_index=True)
+        self.logger.info("Evaluating best RMSE model")
+        metrics_best_rmse = self._train_and_log(
+            model,
+            X_train_full,
+            y_train_full,
+            X_test,
+            y_test,
+            f"{model_name}_best_rmse",
+            best_rmse["params"],
+            data_params,
+        )
+        self.logger.info("Evaluating best MAE model")
+        metrics_best_mae = self._train_and_log(
+            model,
+            X_train_full,
+            y_train_full,
+            X_test,
+            y_test,
+            f"{model_name}_best_mae",
+            best_mae["params"],
+            data_params,
+        )
+
+        self.logger.info(
+            f"Best RMSE model - Val RMSE: {best_rmse['rmse']:.2f}, Test RMSE: {metrics_best_rmse['rmse']:.2f}"
+        )
+        self.logger.info(
+            f"Best MAE model - Val MAE: {best_mae['mae']:.2f}, Test MAE: {metrics_best_mae['mae']:.2f}"
+        )
 
     def _load_data(self, include_validation=False):
         self.logger.debug("Executing method")
