@@ -10,7 +10,8 @@ import pandas as pd
 from lightgbm import LGBMRegressor
 from scipy.stats import randint, uniform
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-from sklearn.model_selection import RandomizedSearchCV
+
+# from sklearn.model_selection import RandomizedSearchCV
 from xgboost import XGBRegressor
 
 from .config import Config
@@ -65,22 +66,24 @@ class Trainer:
                 y_pred_range = model.predict(X_test_range)
 
                 self.logger.info(f"Calculating metrics for {name} on {range_name} range horizon")
+                metrics = self._calculate_metrics(y_test_range, y_pred_range)
+
+                """
                 rmse = sqrt(mean_squared_error(y_test_range, y_pred_range))
                 mae = mean_absolute_error(y_test_range, y_pred_range)
                 r2 = r2_score(y_test_range, y_pred_range)
-
-                self.logger.info(f"Metrics for {name} on {range_name} range horizon")
-                self.logger.info(f"RMSE:\t{rmse}")
-                self.logger.info(f"MAE:\t{mae}")
-                self.logger.info(f"R^2 Score:\t{r2}")
-
                 within_5 = (abs(y_test_range - y_pred_range) <= 5).mean() * 100
                 within_10 = (abs(y_test_range - y_pred_range) <= 10).mean() * 100
                 within_20 = (abs(y_test_range - y_pred_range) <= 20).mean() * 100
+                """
 
-                self.logger.info(f"Predictions within 5 AQI points of actual:\t{within_5}")
-                self.logger.info(f"Predictions within 10 AQI points of actual:\t{within_10}")
-                self.logger.info(f"Predictions within 20 AQI points of actual:\t{within_20}")
+                self.logger.info(f"Metrics for {name} on {range_name} range horizon")
+                self.logger.info(f"RMSE:\t{metrics['rmse']}")
+                self.logger.info(f"MAE:\t{metrics['mae']}")
+                self.logger.info(f"R^2 Score:\t{metrics['r2']}")
+                self.logger.info(f"Predictions within 5 AQI points of actual:\t{metrics['within_5']}")
+                self.logger.info(f"Predictions within 10 AQI points of actual:\t{metrics['within_10']}")
+                self.logger.info(f"Predictions within 20 AQI points of actual:\t{metrics['within_20']}")
 
                 self.logger.info(f"Saving {name} on {range_name} range horizon")
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  # noqa: DTZ005
@@ -89,6 +92,7 @@ class Trainer:
 
                 self.logger.info(f"Saving experiment details for {name} on {range_name} range horizon")
                 hyperparams = model.get_params()
+                """
                 metrics = {
                     "rmse": rmse,
                     "mae": mae,
@@ -97,6 +101,7 @@ class Trainer:
                     "within_10": within_10,
                     "within_20": within_20,
                 }
+                """
 
                 data_params = {
                     "data_version": "2",
@@ -108,6 +113,9 @@ class Trainer:
                     "features": ",".join(X_train.columns),
                 }
 
+                self._log_to_mlflow(metrics, hyperparams, data_params, model, Config.MODELS_DIR / filename)
+
+                """
                 mlflow.log_params(data_params)
                 mlflow.log_metrics(metrics)
                 mlflow.log_params(hyperparams)
@@ -123,7 +131,7 @@ class Trainer:
                         "xgboost.sklearn.XGBRegressor",
                     ],
                 )
-
+                """
                 self._log_experiment(f"{name}_{range_name}", timestamp, hyperparams, metrics)
 
                 mlflow.end_run()
@@ -132,7 +140,10 @@ class Trainer:
         self.logger.debug("Executing Method")
 
         self.logger.debug("Loading training data")
-        X_train, y_train, X_val, y_val, X_test, y_test = self._load_data(include_validation=True)
+        X_train, y_train, X_val, y_val, X_test, y_test, data_hash = self._load_data(include_validation=True)
+
+        # Set up MLflow tracing
+        mlflow.set_experiment("Model Tuning")
 
         # Define hyperparameter ranges
         param_dist = {
@@ -147,21 +158,40 @@ class Trainer:
             "reg_lambda": uniform(0, 1),  # L2 regularisation
         }
 
-        search = RandomizedSearchCV(
-            LGBMRegressor(),
-            param_distributions=param_dist,
-            n_iter=50,
-            cv=5,
-            scoring="neg_root_mean_squared_error",
-            random_state=42,
-            n_jobs=1,
-        )
+        best_rmse = {"rmse": float("inf"), "params": {}}
+        best_mae = {"mae": float("inf"), "params": {}}
 
-        self.logger.info("Tuning hyperparameters")
-        search.fit(X_train, y_train)
+        n_iter = 50  # The number of random iterations to try
+        for i in range(0, n_iter):
+            # Start MLflow run
+            mlflow.start_run(run_name=f"lightgbm_{i}")
 
-        print(f"Best params:\n{search.best_params_}")
-        print(f"Best score:\t{search.best_score_}")
+            # Generate random values for hyperparameters based on distribution
+            params = {key: dist.rvs() for key, dist in param_dist.items()}
+
+            model = LGBMRegressor(**params)
+
+            model.fit(X_train, y_train)
+            y_pred = model.predict(X_val)
+            metrics = self._calculate_metrics(y_val, y_pred)
+            # rmse = sqrt(mean_squared_error(y_val, y_pred))
+            # mae = mean_absolute_error(y_val, y_pred)
+
+            if metrics["rmse"] < best_rmse["rmse"]:
+                best_rmse["rmse"] = metrics["rmse"]
+                best_rmse["params"] = params.copy()
+
+            if metrics["mae"] < best_mae["mae"]:
+                best_mae["mae"] = metrics["mae"]
+                best_mae["params"] = params.copy()
+
+            self._log_to_mlflow(metrics, params)
+            mlflow.end_run()
+
+        print(f"Best score (RMSE):\t{best_rmse['rmse']}")
+        print(f"Best params (RMSE):\n{best_rmse['params']}")
+        print(f"Best score (MAE):\t{best_mae['mae']}")
+        print(f"Best params (MAE):\n{best_mae['params']}")
 
     def _load_data(self, include_validation=False):
         self.logger.debug("Executing method")
@@ -214,3 +244,37 @@ class Trainer:
 
         with jsonlines.open(Config.LOG_DIR / "experiments.jsonl", mode="a") as writer:
             writer.write(record)
+
+    def _calculate_metrics(self, y_true, y_pred) -> dict:
+        self.logger.debug("Executing method")
+
+        metrics = {
+            "rmse": sqrt(mean_squared_error(y_true, y_pred)),
+            "mae": mean_absolute_error(y_true, y_pred),
+            "r2": r2_score(y_true, y_pred),
+            "within_5": (abs(y_true - y_pred) <= 5).mean() * 100,
+            "within_10": (abs(y_true - y_pred) <= 10).mean() * 100,
+            "within_20": (abs(y_true - y_pred) <= 20).mean() * 100,
+        }
+
+        return metrics
+
+    def _log_to_mlflow(self, metrics, hyperparams, data_params=None, model=None, artifact_path=None):
+        mlflow.log_metrics(metrics)
+        mlflow.log_params(hyperparams)
+        if data_params:
+            mlflow.log_params(data_params)
+        if artifact_path:
+            mlflow.log_artifact(artifact_path)
+        if model:
+            mlflow.sklearn.log_model(
+                model,
+                "model",
+                skops_trusted_types=[
+                    "collections.OrderedDict",
+                    "lightgbm.basic.Booster",
+                    "lightgbm.sklearn.LGBMRegressor",
+                    "xgboost.core.Booster",
+                    "xgboost.sklearn.XGBRegressor",
+                ],
+            )
