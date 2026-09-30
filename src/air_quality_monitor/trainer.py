@@ -1,3 +1,4 @@
+import hashlib
 import logging
 from datetime import datetime
 from math import sqrt
@@ -25,7 +26,7 @@ class Trainer:
         self.logger.debug("Executing Method")
 
         self.logger.debug("Loading training data")
-        X_train, y_train, _, _, X_test, y_test = self._load_data()
+        X_train, y_train, _, _, X_test, y_test, data_hash = self._load_data()
 
         self.logger.debug("Splitting on horizons")
         horizon_ranges = {
@@ -40,7 +41,7 @@ class Trainer:
         }
 
         # Set up MLflow tracing
-        mlflow.set_experiment("aqi_prediction")
+        mlflow.set_experiment("AQI Prediction")
 
         for range_name, horizons in horizon_ranges.items():
             mask_train = X_train["horizon"].isin(horizons)
@@ -97,10 +98,31 @@ class Trainer:
                     "within_20": within_20,
                 }
 
-                # Log experiment details with mlflow
-                mlflow.log_params(hyperparams)
+                data_params = {
+                    "data_version": "2",
+                    "data_filename": "training_data_v2.csv",
+                    "data_description": "Include wether trend features",
+                    "data_hash": data_hash,
+                    "n_rows": len(X_train) + len(X_test),
+                    "n_features": len(X_train.columns),
+                    "features": ",".join(X_train.columns),
+                }
+
+                mlflow.log_params(data_params)
                 mlflow.log_metrics(metrics)
+                mlflow.log_params(hyperparams)
                 mlflow.log_artifact(Config.MODELS_DIR / filename)
+                mlflow.sklearn.log_model(
+                    model,
+                    "model",
+                    skops_trusted_types=[
+                        "collections.OrderedDict",
+                        "lightgbm.basic.Booster",
+                        "lightgbm.sklearn.LGBMRegressor",
+                        "xgboost.core.Booster",
+                        "xgboost.sklearn.XGBRegressor",
+                    ],
+                )
 
                 self._log_experiment(f"{name}_{range_name}", timestamp, hyperparams, metrics)
 
@@ -117,7 +139,7 @@ class Trainer:
             "n_estimators": randint(100, 1000),  # The number of trees to build
             "learning_rate": uniform(0.01, 0.29),  # Step size
             "max_depth": randint(3, 12),  # Tree depth
-            "num_leaves": randint(15, 127),  #
+            "num_leaves": randint(15, 127),  # What is this?
             "min_child_samples": randint(5, 50),  # Min samples per leaf
             "subsample": uniform(0.6, 0.4),  # Row sampling
             "colsample_bytree": uniform(0.6, 0.4),  # Feature sampling
@@ -149,6 +171,7 @@ class Trainer:
         # Sort chronologically
         self.logger.debug("Sorting data")
         df = df.sort_values(by="collected_at")
+        hash = hashlib.md5(pd.util.hash_pandas_object(df).values).hexdigest()[:8]
 
         if include_validation:
             # Split 60/20/20 for hyperparameter tuning
@@ -177,7 +200,7 @@ class Trainer:
         X_test = test_df.drop(columns=["aqi", "collected_at"])
         y_test = test_df["aqi"]
 
-        return X_train, y_train, X_val, y_val, X_test, y_test
+        return X_train, y_train, X_val, y_val, X_test, y_test, hash
 
     def _log_experiment(self, model_name: str, timestamp: str, hyperparams: dict, metrics: dict):
         self.logger.debug("Executing method")
