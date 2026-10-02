@@ -16,26 +16,19 @@ from .config import Config
 
 
 class Trainer:
-    def __init__(self):
+    def __init__(self, data_version: int, data_filename: str, data_description: str):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug("Creating object")
         self.data_path = Config.TRAINING_DATA_PATH
+        self.data_version = data_version
+        self.data_filename = data_filename
+        self.data_description = data_description
 
     def train(self):
         self.logger.debug("Executing Method")
 
         self.logger.debug("Loading training data")
-        X_train, y_train, _, _, X_test, y_test, data_hash = self._load_data()
-
-        data_params = {
-            "data_version": "2",
-            "data_filename": "training_data_v2.csv",
-            "data_description": "Include weather trend features",
-            "data_hash": data_hash,
-            "n_rows": len(X_train) + len(X_test),
-            "n_features": len(X_train.columns),
-            "features": ",".join(X_train.columns),
-        }
+        X_train, y_train, _, _, X_test, y_test, data_params = self._load_data()
 
         self.logger.debug("Splitting on horizons")
         horizon_ranges = {
@@ -87,16 +80,11 @@ class Trainer:
         self.logger.debug("Executing Method")
 
         self.logger.debug("Loading training data")
-        X_train, y_train, X_val, y_val, X_test, y_test, data_hash = self._load_data(include_validation=True)
+        X_train, y_train, X_val, y_val, X_test, y_test, data_params = self._load_data(include_validation=True)
 
-        data_params = {
-            "data_version": "2",
-            "data_filename": "training_data_v2.csv",
-            "data_description": "Evaluating best hyperparam sets",
-            "data_hash": data_hash,
-            "n_rows": len(X_train) + len(X_test),
-            "n_features": len(X_train.columns),
-            "features": ",".join(X_train.columns),
+        models = {
+            "lightgbm": LGBMRegressor(),
+            "xgboost": XGBRegressor(),
         }
 
         # Set up MLflow tracing
@@ -118,69 +106,70 @@ class Trainer:
         best_rmse = {"rmse": float("inf"), "params": {}}
         best_mae = {"mae": float("inf"), "params": {}}
 
-        n_iter = 50  # The number of random iterations to try
-        for i in range(n_iter):
-            # Generate random values for hyperparameters based on distribution
-            params = {key: dist.rvs() for key, dist in param_dist.items()}
+        n_iter = 200  # The number of random iterations to try
+        for name, model in models.items():
+            self.logger.info(f"Tuning {name} model")
+            for i in range(n_iter):
+                # Generate random values for hyperparameters based on distribution
+                params = {key: dist.rvs() for key, dist in param_dist.items()}
 
-            model = LGBMRegressor(**params)
-            model_name = "lightgbm"
+                model.set_params(**params)
 
-            metrics = self._train_and_log(
+                metrics = self._train_and_log(
+                    model,
+                    X_train,
+                    y_train,
+                    X_val,
+                    y_val,
+                    f"{name}_{i}",
+                    params,
+                    include_model=False,
+                )
+
+                if metrics["rmse"] < best_rmse["rmse"]:
+                    best_rmse["rmse"] = metrics["rmse"]
+                    best_rmse["params"] = params.copy()
+
+                if metrics["mae"] < best_mae["mae"]:
+                    best_mae["mae"] = metrics["mae"]
+                    best_mae["params"] = params.copy()
+
+            self.logger.info(f"Best score (RMSE):\t{best_rmse['rmse']}")
+            self.logger.info(f"Best params (RMSE):\n{best_rmse['params']}")
+            self.logger.info(f"Best score (MAE):\t{best_mae['mae']}")
+            self.logger.info(f"Best params (MAE):\n{best_mae['params']}")
+
+            X_train_full = pd.concat([X_train, X_val], ignore_index=True)
+            y_train_full = pd.concat([y_train, y_val], ignore_index=True)
+            self.logger.info("Evaluating best RMSE model")
+            metrics_best_rmse = self._train_and_log(
                 model,
-                X_train,
-                y_train,
-                X_val,
-                y_val,
-                f"{model_name}_{i}",
-                params,
-                include_model=False,
+                X_train_full,
+                y_train_full,
+                X_test,
+                y_test,
+                f"{name}_best_rmse",
+                best_rmse["params"],
+                data_params,
+            )
+            self.logger.info("Evaluating best MAE model")
+            metrics_best_mae = self._train_and_log(
+                model,
+                X_train_full,
+                y_train_full,
+                X_test,
+                y_test,
+                f"{name}_best_mae",
+                best_mae["params"],
+                data_params,
             )
 
-            if metrics["rmse"] < best_rmse["rmse"]:
-                best_rmse["rmse"] = metrics["rmse"]
-                best_rmse["params"] = params.copy()
-
-            if metrics["mae"] < best_mae["mae"]:
-                best_mae["mae"] = metrics["mae"]
-                best_mae["params"] = params.copy()
-
-        self.logger.info(f"Best score (RMSE):\t{best_rmse['rmse']}")
-        self.logger.info(f"Best params (RMSE):\n{best_rmse['params']}")
-        self.logger.info(f"Best score (MAE):\t{best_mae['mae']}")
-        self.logger.info(f"Best params (MAE):\n{best_mae['params']}")
-
-        X_train_full = pd.concat([X_train, X_val], ignore_index=True)
-        y_train_full = pd.concat([y_train, y_val], ignore_index=True)
-        self.logger.info("Evaluating best RMSE model")
-        metrics_best_rmse = self._train_and_log(
-            model,
-            X_train_full,
-            y_train_full,
-            X_test,
-            y_test,
-            f"{model_name}_best_rmse",
-            best_rmse["params"],
-            data_params,
-        )
-        self.logger.info("Evaluating best MAE model")
-        metrics_best_mae = self._train_and_log(
-            model,
-            X_train_full,
-            y_train_full,
-            X_test,
-            y_test,
-            f"{model_name}_best_mae",
-            best_mae["params"],
-            data_params,
-        )
-
-        self.logger.info(
-            f"Best RMSE model - Val RMSE: {best_rmse['rmse']:.2f}, Test RMSE: {metrics_best_rmse['rmse']:.2f}"
-        )
-        self.logger.info(
-            f"Best MAE model - Val MAE: {best_mae['mae']:.2f}, Test MAE: {metrics_best_mae['mae']:.2f}"
-        )
+            self.logger.info(
+                f"Best RMSE model - Val RMSE: {best_rmse['rmse']:.2f}, Test RMSE: {metrics_best_rmse['rmse']:.2f}"
+            )
+            self.logger.info(
+                f"Best MAE model - Val MAE: {best_mae['mae']:.2f}, Test MAE: {metrics_best_mae['mae']:.2f}"
+            )
 
     def _load_data(self, include_validation=False):
         self.logger.debug("Executing method")
@@ -219,7 +208,18 @@ class Trainer:
         X_test = test_df.drop(columns=["aqi", "collected_at"])
         y_test = test_df["aqi"]
 
-        return X_train, y_train, X_val, y_val, X_test, y_test, hash
+        # Build data_params dict for MLflow logging
+        data_params = {
+            "data_version": self.data_version,
+            "data_filename": self.data_filename,
+            "data_description": self.data_description,
+            "data_hash": hash,
+            "n_rows": len(X_train) + len(X_test),
+            "n_features": len(X_train.columns),
+            "features": ",".join(X_train.columns),
+        }
+
+        return X_train, y_train, X_val, y_val, X_test, y_test, data_params
 
     def _log_experiment(self, model_name: str, timestamp: str, hyperparams: dict, metrics: dict):
         self.logger.debug("Executing method")
@@ -295,14 +295,19 @@ class Trainer:
         metrics = self._calculate_metrics(y_test, y_pred)
 
         # Save artifact
-        self.logger.info(f"Saving {run_name} model")
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  # noqa: DTZ005
-        filename = f"{run_name}_{timestamp}.joblib"
-        joblib.dump(model, Config.MODELS_DIR / filename)
+        if include_model:
+            self.logger.info(f"Saving {run_name} model")
+            filename = f"{run_name}_{timestamp}.joblib"
+            joblib.dump(model, Config.MODELS_DIR / filename)
 
         # MLflow
         self._log_to_mlflow(
-            metrics, hyperparams, data_params, model if include_model else None, Config.MODELS_DIR / filename
+            metrics,
+            hyperparams,
+            data_params,
+            model if include_model else None,
+            Config.MODELS_DIR / filename if include_model else None,
         )
 
         # JSON

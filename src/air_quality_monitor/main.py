@@ -85,19 +85,19 @@ def run_feature_engineering():
     training_df.to_csv(Config.TRAINING_DATA_PATH, index=False)
 
 
-def run_training():
+def run_training(data_version: int, data_filename: str, data_description: str):
     logger = logging.getLogger(__name__)
     logger.debug("Executing method")
 
-    trainer = Trainer()
+    trainer = Trainer(data_version, data_filename, data_description)
     trainer.train()
 
 
-def run_tuning():
+def run_tuning(data_version: int, data_filename: str, data_description: str):
     logger = logging.getLogger(__name__)
     logger.debug("Executing method")
 
-    trainer = Trainer()
+    trainer = Trainer(data_version, data_filename, data_description)
     trainer.tune()
 
 
@@ -124,8 +124,22 @@ def main():
     logger.debug(f"IS_PRODUCTION:\t{Config.IS_PRODUCTION}")
     logger.debug(f"REQUEST_TIMEOUT:\t{Config.REQUEST_TIMEOUT}")
 
+    # Parse command line arguments
     arg_parser = argparse.ArgumentParser(description="Air Quality Monitor")
-    arg_parser.add_argument("command", choices=["collect", "prepare", "train", "tune"])
+    subparsers = arg_parser.add_subparsers(dest="command")
+    subparsers.add_parser("collect")
+    subparsers.add_parser("prepare")
+
+    train_parser = subparsers.add_parser("train")
+    train_parser.add_argument("--data-version", required=True)
+    train_parser.add_argument("--data-filename", required=True)
+    train_parser.add_argument("--data-description", required=True)
+
+    tune_parser = subparsers.add_parser("tune")
+    tune_parser.add_argument("--data-version", required=True)
+    tune_parser.add_argument("--data-filename", required=True)
+    tune_parser.add_argument("--data-description", required=True)
+
     args = arg_parser.parse_args()
 
     match args.command:
@@ -137,10 +151,10 @@ def main():
             run_feature_engineering()
         case "train":
             logger.info("Training models")
-            run_training()
+            run_training(args.data_version, args.data_filename, args.data_description)
         case "tune":
-            logger.info("Tuning hyperparamters")
-            run_tuning()
+            logger.info("Tuning hyperparameters")
+            run_tuning(args.data_version, args.data_filename, args.data_description)
 
 
 if __name__ == "__main__":
