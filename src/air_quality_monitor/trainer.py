@@ -8,7 +8,7 @@ import jsonlines
 import mlflow
 import pandas as pd
 from lightgbm import LGBMRegressor
-from scipy.stats import randint, uniform
+from scipy.stats import loguniform, randint, uniform
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from xgboost import XGBRegressor
 
@@ -92,21 +92,22 @@ class Trainer:
 
         # Define hyperparameter ranges
         param_dist = {
-            "n_estimators": randint(100, 1000),  # The number of trees to build
-            "learning_rate": uniform(0.01, 0.29),  # Step size
-            "max_depth": randint(3, 12),  # Tree depth
-            "num_leaves": randint(15, 127),  # What is this?
-            "min_child_samples": randint(5, 50),  # Min samples per leaf
-            "subsample": uniform(0.6, 0.4),  # Row sampling
-            "colsample_bytree": uniform(0.6, 0.4),  # Feature sampling
-            "reg_alpha": uniform(0, 1),  # L1 regularisation
-            "reg_lambda": uniform(0, 1),  # L2 regularisation
+            "n_estimators": randint(50, 1000),  # The number of trees to build
+            "learning_rate": loguniform(0.001, 1),  # Step size
+            "max_depth": randint(2, 12),  # Tree depth
+            "num_leaves": randint(7, 256),  # Number of leaves in full tree (LightGBM)
+            "min_child_samples": randint(1, 100),  # Min samples per leaf (LightGBM)
+            "min_child_weight": randint(1, 100),  # Min sum of instance weight (hessian)
+            "subsample": uniform(0.4, 0.6),  # Row sampling
+            "colsample_bytree": uniform(0.4, 0.6),  # Feature sampling
+            "reg_alpha": loguniform(1e-3, 1e2),  # L1 regularisation
+            "reg_lambda": loguniform(1e-3, 1e2),  # L2 regularisation
         }
 
         best_rmse = {"rmse": float("inf"), "params": {}}
         best_mae = {"mae": float("inf"), "params": {}}
 
-        n_iter = 200  # The number of random iterations to try
+        n_iter = 100  # The number of random iterations to try
         for name, model in models.items():
             self.logger.info(f"Tuning {name} model")
             for i in range(n_iter):
