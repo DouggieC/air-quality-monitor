@@ -82,6 +82,13 @@ class Trainer:
         self.logger.debug("Loading training data")
         X_train, y_train, X_val, y_val, X_test, y_test, data_params = self._load_data(include_validation=True)
 
+        self.logger.debug("Splitting on horizons")
+        horizon_ranges = {
+            "short": [0, 1, 2],
+            "medium": [4, 8, 12],
+            "long": [24, 28],
+        }
+
         models = {
             "lightgbm": LGBMRegressor(),
             "xgboost": XGBRegressor(),
@@ -104,73 +111,84 @@ class Trainer:
             "reg_lambda": loguniform(1e-3, 1e2),  # L2 regularisation
         }
 
-        best_rmse = {"rmse": float("inf"), "params": {}}
-        best_mae = {"mae": float("inf"), "params": {}}
-
         n_iter = 100  # The number of random iterations to try
-        for name, model in models.items():
-            self.logger.info(f"Tuning {name} model")
-            for i in range(n_iter):
-                # Generate random values for hyperparameters based on distribution
-                params = {key: dist.rvs() for key, dist in param_dist.items()}
+        for range_name, horizons in horizon_ranges.items():
+            mask_train = X_train["horizon"].isin(horizons)
+            mask_val = X_val["horizon"].isin(horizons)
+            mask_test = X_test["horizon"].isin(horizons)
 
-                model.set_params(**params)
+            X_train_range = X_train.loc[mask_train]
+            y_train_range = y_train.loc[mask_train]
+            X_val_range = X_val.loc[mask_val]
+            y_val_range = y_val.loc[mask_val]
+            X_test_range = X_test.loc[mask_test]
+            y_test_range = y_test.loc[mask_test]
 
-                metrics = self._train_and_log(
+            for name, model in models.items():
+                self.logger.info(f"Tuning {name} on {range_name} range horizon")
+                best_rmse = {"rmse": float("inf"), "params": {}}
+                best_mae = {"mae": float("inf"), "params": {}}
+                for i in range(n_iter):
+                    # Generate random values for hyperparameters based on distribution
+                    params = {key: dist.rvs() for key, dist in param_dist.items()}
+
+                    model.set_params(**params)
+
+                    metrics = self._train_and_log(
+                        model,
+                        X_train_range,
+                        y_train_range,
+                        X_val_range,
+                        y_val_range,
+                        f"{name}_{i}_{range_name}",
+                        params,
+                        include_model=False,
+                    )
+
+                    if metrics["rmse"] < best_rmse["rmse"]:
+                        best_rmse["rmse"] = metrics["rmse"]
+                        best_rmse["params"] = params.copy()
+
+                    if metrics["mae"] < best_mae["mae"]:
+                        best_mae["mae"] = metrics["mae"]
+                        best_mae["params"] = params.copy()
+
+                self.logger.info(f"Best score (RMSE):\t{best_rmse['rmse']}")
+                self.logger.info(f"Best params (RMSE):\n{best_rmse['params']}")
+                self.logger.info(f"Best score (MAE):\t{best_mae['mae']}")
+                self.logger.info(f"Best params (MAE):\n{best_mae['params']}")
+
+                X_train_full = pd.concat([X_train_range, X_val_range], ignore_index=True)
+                y_train_full = pd.concat([y_train_range, y_val_range], ignore_index=True)
+                self.logger.info(f"Evaluating best {range_name}-term RMSE model")
+                metrics_best_rmse = self._train_and_log(
                     model,
-                    X_train,
-                    y_train,
-                    X_val,
-                    y_val,
-                    f"{name}_{i}",
-                    params,
-                    include_model=False,
+                    X_train_full,
+                    y_train_full,
+                    X_test_range,
+                    y_test_range,
+                    f"{name}_{range_name}_best_rmse",
+                    best_rmse["params"],
+                    data_params,
+                )
+                self.logger.info(f"Evaluating best {range_name}-term MAE model")
+                metrics_best_mae = self._train_and_log(
+                    model,
+                    X_train_full,
+                    y_train_full,
+                    X_test_range,
+                    y_test_range,
+                    f"{name}_{range_name}_best_mae",
+                    best_mae["params"],
+                    data_params,
                 )
 
-                if metrics["rmse"] < best_rmse["rmse"]:
-                    best_rmse["rmse"] = metrics["rmse"]
-                    best_rmse["params"] = params.copy()
-
-                if metrics["mae"] < best_mae["mae"]:
-                    best_mae["mae"] = metrics["mae"]
-                    best_mae["params"] = params.copy()
-
-            self.logger.info(f"Best score (RMSE):\t{best_rmse['rmse']}")
-            self.logger.info(f"Best params (RMSE):\n{best_rmse['params']}")
-            self.logger.info(f"Best score (MAE):\t{best_mae['mae']}")
-            self.logger.info(f"Best params (MAE):\n{best_mae['params']}")
-
-            X_train_full = pd.concat([X_train, X_val], ignore_index=True)
-            y_train_full = pd.concat([y_train, y_val], ignore_index=True)
-            self.logger.info("Evaluating best RMSE model")
-            metrics_best_rmse = self._train_and_log(
-                model,
-                X_train_full,
-                y_train_full,
-                X_test,
-                y_test,
-                f"{name}_best_rmse",
-                best_rmse["params"],
-                data_params,
-            )
-            self.logger.info("Evaluating best MAE model")
-            metrics_best_mae = self._train_and_log(
-                model,
-                X_train_full,
-                y_train_full,
-                X_test,
-                y_test,
-                f"{name}_best_mae",
-                best_mae["params"],
-                data_params,
-            )
-
-            self.logger.info(
-                f"Best RMSE model - Val RMSE: {best_rmse['rmse']:.2f}, Test RMSE: {metrics_best_rmse['rmse']:.2f}"
-            )
-            self.logger.info(
-                f"Best MAE model - Val MAE: {best_mae['mae']:.2f}, Test MAE: {metrics_best_mae['mae']:.2f}"
-            )
+                self.logger.info(
+                    f"Best {range_name}-term RMSE model - Val RMSE: {best_rmse['rmse']:.2f}, Test RMSE: {metrics_best_rmse['rmse']:.2f}"
+                )
+                self.logger.info(
+                    f"Best {range_name}-term MAE model - Val MAE: {best_mae['mae']:.2f}, Test MAE: {metrics_best_mae['mae']:.2f}"
+                )
 
     def _load_data(self, include_validation=False):
         self.logger.debug("Executing method")
