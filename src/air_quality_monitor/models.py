@@ -128,3 +128,12 @@ class City:
     timezone: str
     latitude: float | None = None
     longitude: float | None = None
+
+
+@dataclass
+class Prediction(Reading):
+    # A dataclass to represent a prediction for air quality or weather
+    forecast_for: datetime  # Timestamp when the prediction is for
+    predicted_aqi: int  # Predicted AQI
+    model_name: str  # Name of the model used (e.g. "lightgbm_short")
+    horizon: int  # Prediction horizon in hours

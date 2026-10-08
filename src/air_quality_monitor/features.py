@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 
 import pandas as pd
 
@@ -12,7 +13,7 @@ class FeatureEngineer:
         self.aqi_storage = aqi_storage
         self.weather_storage = weather_storage
 
-    def build(self) -> pd.DataFrame:
+    def build(self, as_of: datetime | None = None, include_metadata: bool = False) -> pd.DataFrame:
         self.logger.debug("Executing method")
         aqi_df = self.aqi_storage.read()
         we_df = self.weather_storage.read()
@@ -22,6 +23,17 @@ class FeatureEngineer:
         aqi_df["pollutant_timestamp"] = aqi_df["pollutant_timestamp"].dt.floor("h")
         we_df["collected_at"] = we_df["collected_at"].dt.floor("h")
         we_df["forecast_for"] = we_df["forecast_for"].dt.floor("h")
+
+        # Filter by as_of date if required
+        if as_of is not None:
+            self.logger.debug(f"Filtering AQI and weather dataframes by as_of={as_of}")
+            aqi_df = aqi_df[
+                (aqi_df["pollutant_timestamp"] <= as_of)
+                & (aqi_df["pollutant_timestamp"] >= as_of - pd.Timedelta(hours=48))
+            ]
+            we_df = we_df[
+                (we_df["forecast_for"] >= as_of) & (we_df["forecast_for"] <= as_of + pd.Timedelta(hours=48))
+            ]
 
         # Sort the dataframeby city and pollutant_timestamp ready for creating engineered features
         self.logger.debug("Sorting AQI dataframe by city and pollutant_timestamp")
@@ -43,7 +55,7 @@ class FeatureEngineer:
         joined_df = self._create_rolling_features(joined_df, aqi_df)
         joined_df = self._create_temporal_features(joined_df)
         joined_df = self._create_weather_trends(joined_df)
-        joined_df = self._encode_categoricals(joined_df)
+        joined_df = self._encode_categoricals(joined_df, include_metadata)
 
         # Drop unnecessary columns
         joined_df = joined_df.drop(
@@ -57,13 +69,7 @@ class FeatureEngineer:
                 "wind_direction_aqi",
                 "weather_timestamp",
                 "collected_at_aqi",
-                "state_aqi",
-                "country_aqi",
-                "latitude_aqi",
-                "longitude_aqi",
-                "timezone_aqi",
                 "id_we",
-                "forecast_for",
                 "weather_main",
                 "weather_desc",
                 "state_we",
@@ -74,6 +80,31 @@ class FeatureEngineer:
             ],
             axis=1,
         )
+
+        if not include_metadata:
+            # We're training or tuning. Don't need location data or forecast_for
+            joined_df = joined_df.drop(
+                [
+                    "state_aqi",
+                    "country_aqi",
+                    "latitude_aqi",
+                    "longitude_aqi",
+                    "timezone_aqi",
+                    "forecast_for",
+                ],
+                axis=1,
+            )
+        else:
+            # We're predicting. Keep location data and forecast_for, but rename
+            joined_df = joined_df.rename(
+                columns={
+                    "state_aqi": "state",
+                    "country_aqi": "country",
+                    "latitude_aqi": "latitude",
+                    "longitude_aqi": "longitude",
+                    "timezone_aqi": "timezone",
+                }
+            )
 
         # Rename for neatness
         joined_df = joined_df.rename(columns={"collected_at_we": "collected_at"})
@@ -163,11 +194,20 @@ class FeatureEngineer:
 
         return df
 
-    def _encode_categoricals(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _encode_categoricals(self, df: pd.DataFrame, include_metadata: bool = False) -> pd.DataFrame:
         """Performs one-hot encoding of categorical variables"""
         self.logger.debug("Executing method")
 
+        if include_metadata:
+            # We're predicting. Keep city name
+            city_col = df["city"].copy()
+
+        # OHE of city & main_pollutant
         df = pd.get_dummies(df, columns=["city", "main_pollutant"])
+
+        if include_metadata:
+            # We're predicting. Keep city name
+            df["city"] = city_col
 
         return df
 

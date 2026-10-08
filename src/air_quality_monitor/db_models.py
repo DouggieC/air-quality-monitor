@@ -121,3 +121,15 @@ class DBDailyForecast(Base):
     weather_main: Mapped[str] = mapped_column(String(100))  # The main weather (clouds, rain, sun, etc.)
     weather_desc: Mapped[str] = mapped_column(String(100))  # The weather description ('few clouds', etc.)
     collected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))  # API collection timestamp
+
+
+class DBPrediction(Base):
+    __tablename__ = "prediction"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    city_id: Mapped[int] = mapped_column(ForeignKey("city.id"))
+    collected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))  # API collection timestamp
+    forecast_for: Mapped[datetime] = mapped_column(DateTime(timezone=True))  # UTC Forecast time
+    predicted_aqi: Mapped[int] = mapped_column(Integer)  # Predicted AQI based on US EPA standard
+    model_name: Mapped[str] = mapped_column(String(100))  # Name of the model used for prediction
+    horizon: Mapped[int] = mapped_column(Integer)  # Prediction horizon in hours

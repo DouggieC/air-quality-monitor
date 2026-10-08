@@ -1,8 +1,8 @@
 import logging
 
 from .database import Database
-from .db_models import DBAirQualityReading, DBDailyForecast, DBHourlyForecast, DBWeatherReading
-from .models import AirQualityReading, DailyForecast, HourlyForecast, WeatherReading
+from .db_models import DBAirQualityReading, DBDailyForecast, DBHourlyForecast, DBPrediction, DBWeatherReading
+from .models import AirQualityReading, DailyForecast, HourlyForecast, Prediction, WeatherReading
 from .storage import CSVStorage, DBStorage
 
 
@@ -19,6 +19,7 @@ class StorageFactory:
             WeatherReading: ("we_history.csv", DBWeatherReading),
             HourlyForecast: ("hourly_forecast.csv", DBHourlyForecast),
             DailyForecast: ("daily_forecast.csv", DBDailyForecast),
+            Prediction: ("predictions.csv", DBPrediction),
         }
 
     @property

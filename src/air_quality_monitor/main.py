@@ -7,11 +7,28 @@ from .collector import DataCollector
 from .config import Config
 from .features import FeatureEngineer
 from .logger import setup_logging
-from .models import AirQualityReading, DailyForecast, HourlyForecast, WeatherReading
+from .models import AirQualityReading, DailyForecast, HourlyForecast, Prediction, WeatherReading
 from .parser import AirQualityParser, DailyForecastParser, HourlyForecastParser
+from .predictor import Predictor
 from .storage import JSONStorage
 from .storage_factory import StorageFactory
 from .trainer import Trainer
+
+
+def _get_feature_storage():
+    logger = logging.getLogger(__name__)
+    logger.debug("Executing method")
+
+    # Set up storage
+    sf = StorageFactory(Config)
+    aqi_csv, aqi_db = sf.get_storage(AirQualityReading)
+    we_csv, we_db = sf.get_storage(HourlyForecast)
+
+    # Pick DB or CSV. Prefer DB if both available
+    aqi_storage = aqi_db or aqi_csv
+    we_storage = we_db or we_csv
+
+    return aqi_storage, we_storage
 
 
 def run_data_collection():
@@ -71,6 +88,7 @@ def run_feature_engineering():
     logger.debug("Executing method")
 
     # Set up storage
+    """
     sf = StorageFactory(Config)
     aqi_csv, aqi_db = sf.get_storage(AirQualityReading)
     we_csv, we_db = sf.get_storage(HourlyForecast)
@@ -78,11 +96,34 @@ def run_feature_engineering():
     # Pick DB or CSV. Prefer DB if both available
     aqi_storage = aqi_db or aqi_csv
     we_storage = we_db or we_csv
+    """
+    aqi_storage, we_storage = _get_feature_storage()
 
     # Run feature engineering
     engineer = FeatureEngineer(aqi_storage, we_storage)
     training_df = engineer.build()
     training_df.to_csv(Config.TRAINING_DATA_PATH, index=False)
+
+
+def run_prediction():
+    logger = logging.getLogger(__name__)
+    logger.debug("Executing method")
+
+    # Set up storage
+    aqi_storage, we_storage = _get_feature_storage()
+
+    # Make predictions
+    engineer = FeatureEngineer(aqi_storage, we_storage)
+    predictor = Predictor(engineer)
+    predictions = predictor.predict()
+
+    # Store them
+    sf = StorageFactory(Config)
+    pred_csv_storage, pred_db_storage = sf.get_storage(Prediction):
+    for storage in [pred_csv_storage, pred_db_storage]:
+        if storage:
+            for prediction in predictions:
+                storage.save(prediction)
 
 
 def run_training(data_version: int, data_filename: str, data_description: str):
@@ -129,6 +170,7 @@ def main():
     subparsers = arg_parser.add_subparsers(dest="command")
     subparsers.add_parser("collect")
     subparsers.add_parser("prepare")
+    subparsers.add_parser("predict")
 
     train_parser = subparsers.add_parser("train")
     train_parser.add_argument("--data-version", required=True)
@@ -155,6 +197,9 @@ def main():
         case "tune":
             logger.info("Tuning hyperparameters")
             run_tuning(args.data_version, args.data_filename, args.data_description)
+        case "predict":
+            logger.info("Predicting air quality")
+            run_prediction()
 
 
 if __name__ == "__main__":

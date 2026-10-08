@@ -36,7 +36,7 @@ class FileStorage(BaseStorage):
         self.model_class = model_class
 
         if not issubclass(self.model_class, Reading):
-            raise ValueError(f"{self.model_class} is not a valid Reading model")
+            raise TypeError(f"{self.model_class} is not a valid Reading model")
 
     def _get_datetime_cols(self) -> list[str]:
         dates = [f.name for f in fields(self.model_class) if f.type == datetime]
@@ -67,7 +67,7 @@ class CSVStorage(FileStorage):
                 index=False,
                 quoting=csv.QUOTE_NONNUMERIC,
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.logger.error(f"Error while saving to file: {e}")
 
     def read(self) -> pd.DataFrame:
@@ -168,7 +168,7 @@ class DBStorage(BaseStorage):
         self.model_class = model_class
 
         if not issubclass(self.model_class, Base):
-            raise ValueError(f"{self.model_class} is not a valid SQLAlchemy model")
+            raise TypeError(f"{self.model_class} is not a valid SQLAlchemy model")
 
     def save(self, reading: Reading, city: City):
         # Write to the table
@@ -262,7 +262,7 @@ class ParquetStorage(FileStorage):
         self.logger.warning(self.not_implemented_msg)
 
         if not issubclass(self.model_class, Base):
-            raise ValueError(f"{self.model_class} is not a valid SQLAlchemy model")
+            raise TypeError(f"{self.model_class} is not a valid SQLAlchemy model")
 
     def save(self, reading: Reading, base_filename: Path):
         raise NotImplementedError(self.not_implemented_msg)

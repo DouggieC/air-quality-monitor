@@ -1,4 +1,5 @@
 import hashlib
+import json
 import logging
 from datetime import datetime
 from math import sqrt
@@ -34,13 +35,12 @@ class Trainer:
         horizon_ranges = {
             "short": [0, 1, 2],
             "medium": [4, 8, 12],
-            "long": [24, 28],
+            "long": [24, 48],
         }
 
-        models = {
-            "lightgbm": LGBMRegressor(),
-            "xgboost": XGBRegressor(),
-        }
+        self.logger.debug("Reading model hyperparameters from config")
+        with open(Config.CONFIG_DIR / "model_params.json", "r") as f:
+            model_params = json.load(f)
 
         # Set up MLflow tracing
         mlflow.set_experiment("AQI Prediction")
@@ -54,8 +54,13 @@ class Trainer:
             X_test_range = X_test.loc[mask_test]
             y_test_range = y_test.loc[mask_test]
 
+            models = {
+                f"lightgbm_{range_name}": LGBMRegressor(**model_params[f"lightgbm_{range_name}"]),
+                f"xgboost_{range_name}": XGBRegressor(**model_params[f"xgboost_{range_name}"]),
+            }
+
             for name, model in models.items():
-                self.logger.info(f"Training {name} on {range_name} range horizon")
+                self.logger.info(f"Training {name}")
 
                 metrics = self._train_and_log(
                     model,
@@ -63,12 +68,12 @@ class Trainer:
                     y_train_range,
                     X_test_range,
                     y_test_range,
-                    f"{name}_{range_name}",
+                    name,
                     model.get_params(),
                     data_params,
                 )
 
-                self.logger.info(f"Metrics for {name} on {range_name} range horizon")
+                self.logger.info(f"Metrics for {name}")
                 self.logger.info(f"RMSE:\t{metrics['rmse']}")
                 self.logger.info(f"MAE:\t{metrics['mae']}")
                 self.logger.info(f"R^2 Score:\t{metrics['r2']}")
@@ -86,7 +91,7 @@ class Trainer:
         horizon_ranges = {
             "short": [0, 1, 2],
             "medium": [4, 8, 12],
-            "long": [24, 28],
+            "long": [24, 48],
         }
 
         models = {
@@ -267,7 +272,9 @@ class Trainer:
 
         return metrics
 
-    def _log_to_mlflow(self, metrics, hyperparams, data_params=None, model=None, artifact_path=None):
+    def _log_to_mlflow(
+        self, metrics, hyperparams, data_params=None, model=None, reg_model_name=None, artifact_path=None
+    ):
         mlflow.log_metrics(metrics)
         mlflow.log_params(hyperparams)
         if data_params:
@@ -278,6 +285,7 @@ class Trainer:
             mlflow.sklearn.log_model(
                 model,
                 "model",
+                registered_model_name=reg_model_name,
                 skops_trusted_types=[
                     "collections.OrderedDict",
                     "lightgbm.basic.Booster",
@@ -326,6 +334,7 @@ class Trainer:
             hyperparams,
             data_params,
             model if include_model else None,
+            run_name if include_model else None,
             Config.MODELS_DIR / filename if include_model else None,
         )
 
