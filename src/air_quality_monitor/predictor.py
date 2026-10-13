@@ -1,8 +1,10 @@
+import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 import mlflow
 
+from .config import Config
 from .features import FeatureEngineer
 from .models import Prediction
 
@@ -13,9 +15,9 @@ class Predictor:
         self.logger.debug("Creating object")
         self.feature_engineer = feature_engineer
         self.models = {
-            "short": mlflow.pyfunc.load_model("models:/lightgbm_short/Production"),
-            "medium": mlflow.pyfunc.load_model("models:/lightgbm_medium/Production"),
-            "long": mlflow.pyfunc.load_model("models:/lightgbm_long/Production"),
+            "short": mlflow.pyfunc.load_model("models:/lightgbm_short/latest"),
+            "medium": mlflow.pyfunc.load_model("models:/lightgbm_medium/latest"),
+            "long": mlflow.pyfunc.load_model("models:/lightgbm_long/latest"),
         }
 
         self.horizon_to_range = {
@@ -31,7 +33,10 @@ class Predictor:
 
     def predict(self) -> list[Prediction]:
         self.logger.debug("Executing method")
-        features_df = self.feature_engineer.build(as_of=datetime.now(), include_metadata=True)  # noqa: DTZ005
+        # Tempfix: No access to up-to-date data
+        as_of = datetime(2026, 10, 5, 10, 0, 0, tzinfo=timezone.utc)
+        features_df = self.feature_engineer.build(as_of=as_of, include_metadata=True)  # noqa: DTZ005
+        # features_df = self.feature_engineer.build(as_of=datetime.now(timezone.utc), include_metadata=True)
         predictions = []
 
         for range_name, model in self.models.items():
@@ -55,8 +60,16 @@ class Predictor:
                     "collected_at",
                     "forecast_for",
                 ],
-                axis=1,
             )
+            # print(model_input.dtypes[model_input.dtypes == 'object'])
+            model_input["heat_index"] = model_input["heat_index"].fillna(0).astype(float)
+            # print(f"model_input columns ({len(model_input.columns)}): {sorted(model_input.columns.tolist())}")
+            # Load the columns list used for training
+            with open(Config.CONFIG_DIR / "training_columns.json", "r") as f:
+                training_columns = json.load(f)
+            model_input = model_input.reindex(columns=training_columns, fill_value=0)
+            print(f"model_input shape: {model_input.shape}")
+            print(f"batch shape: {batch.shape}")
             preds = model.predict(model_input)
 
             for (_, row), pred in zip(batch.iterrows(), preds):

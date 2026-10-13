@@ -24,6 +24,10 @@ class FeatureEngineer:
         we_df["collected_at"] = we_df["collected_at"].dt.floor("h")
         we_df["forecast_for"] = we_df["forecast_for"].dt.floor("h")
 
+        print(f"aqi_df pollutant_timestamp range: {aqi_df['pollutant_timestamp'].min()} to {aqi_df['pollutant_timestamp'].max()}")
+        print(f"we_df forecast_for range: {we_df['forecast_for'].min()} to {we_df['forecast_for'].max()}")
+        print(f"as_of: {as_of}")
+        
         # Filter by as_of date if required
         if as_of is not None:
             self.logger.debug(f"Filtering AQI and weather dataframes by as_of={as_of}")

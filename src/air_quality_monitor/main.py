@@ -1,4 +1,5 @@
 import argparse
+import json
 import logging
 from pathlib import Path
 
@@ -7,12 +8,10 @@ from .collector import DataCollector
 from .config import Config
 from .features import FeatureEngineer
 from .logger import setup_logging
-from .models import AirQualityReading, DailyForecast, HourlyForecast, Prediction, WeatherReading
+from .models import AirQualityReading, City, DailyForecast, HourlyForecast, Prediction, WeatherReading
 from .parser import AirQualityParser, DailyForecastParser, HourlyForecastParser
-from .predictor import Predictor
-from .storage import JSONStorage
+from .storage import JSONStorage, DBStorage
 from .storage_factory import StorageFactory
-from .trainer import Trainer
 
 
 def _get_feature_storage():
@@ -88,15 +87,6 @@ def run_feature_engineering():
     logger.debug("Executing method")
 
     # Set up storage
-    """
-    sf = StorageFactory(Config)
-    aqi_csv, aqi_db = sf.get_storage(AirQualityReading)
-    we_csv, we_db = sf.get_storage(HourlyForecast)
-
-    # Pick DB or CSV. Prefer DB if both available
-    aqi_storage = aqi_db or aqi_csv
-    we_storage = we_db or we_csv
-    """
     aqi_storage, we_storage = _get_feature_storage()
 
     # Run feature engineering
@@ -104,8 +94,15 @@ def run_feature_engineering():
     training_df = engineer.build()
     training_df.to_csv(Config.TRAINING_DATA_PATH, index=False)
 
+    # Save list of training columns used - needed to ensure prediction trains on same cols
+    cols = [c for c in training_df.columns if c not in ["aqi", "collected_at"]]
+    with open(Config.CONFIG_DIR / "training_columns.json", "w") as f:
+        json.dump(cols, f, indent=4)
+
 
 def run_prediction():
+    from .predictor import Predictor
+
     logger = logging.getLogger(__name__)
     logger.debug("Executing method")
 
@@ -119,14 +116,28 @@ def run_prediction():
 
     # Store them
     sf = StorageFactory(Config)
-    pred_csv_storage, pred_db_storage = sf.get_storage(Prediction):
+    pred_csv_storage, pred_db_storage = sf.get_storage(Prediction)
     for storage in [pred_csv_storage, pred_db_storage]:
         if storage:
             for prediction in predictions:
-                storage.save(prediction)
+                logger.debug(f"Saving prediction: {prediction}")
+                if isinstance(storage, DBStorage):
+                    city = City(
+                        city=prediction.city,
+                        state=prediction.state,
+                        country=prediction.country,
+                        timezone=prediction.timezone,
+                        latitude=prediction.latitude,
+                        longitude=prediction.longitude,
+                    )
+                    storage.save(prediction, city)
+                else:
+                    storage.save(prediction)
 
 
 def run_training(data_version: int, data_filename: str, data_description: str):
+    from .trainer import Trainer
+
     logger = logging.getLogger(__name__)
     logger.debug("Executing method")
 
@@ -135,6 +146,8 @@ def run_training(data_version: int, data_filename: str, data_description: str):
 
 
 def run_tuning(data_version: int, data_filename: str, data_description: str):
+    from .trainer import Trainer
+
     logger = logging.getLogger(__name__)
     logger.debug("Executing method")
 

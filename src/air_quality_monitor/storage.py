@@ -53,7 +53,6 @@ class CSVStorage(FileStorage):
     def save(self, reading: Reading) -> None:
         # Implement CSV saving logic here
         self.logger.debug("Executing method")
-        self.logger.info("Saving reading to CSV")
         self.logger.debug(f"Data to be saved: {reading}")
         self.logger.debug(f"Saving to {self.filepath}")
 
@@ -173,7 +172,6 @@ class DBStorage(BaseStorage):
     def save(self, reading: Reading, city: City):
         # Write to the table
         self.logger.debug("Executing method")
-        self.logger.info("Saving reading to DB")
 
         reading_dict = asdict(reading)
         self.logger.debug(f"Data to be saved (dictionary): {reading_dict}")

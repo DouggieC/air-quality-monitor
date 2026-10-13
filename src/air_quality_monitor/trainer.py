@@ -3,6 +3,7 @@ import json
 import logging
 from datetime import datetime
 from math import sqrt
+from pathlib import Path
 
 import joblib
 import jsonlines
@@ -327,6 +328,14 @@ class Trainer:
             self.logger.info(f"Saving {run_name} model")
             filename = f"{run_name}_{timestamp}.joblib"
             joblib.dump(model, Config.MODELS_DIR / filename)
+
+            # Update symlink for latest model
+            model_file = Path(Config.MODELS_DIR / filename)
+            link_path = Path(Config.MODELS_DIR / f"{run_name}_latest.joblib")
+            if link_path.exists() or link_path.is_symlink():
+                link_path.unlink()
+
+            link_path.symlink_to(model_file.name)
 
         # MLflow
         self._log_to_mlflow(
