@@ -14,6 +14,7 @@ class AirQualityClient:
         self.api_key = api_key
         self.base_url = base_url
         self.request_timeout = request_timeout
+        self.rate_limit_remaining = None
 
     def get_all_countries(self):
         # Gets list of all countries with available data
@@ -91,6 +92,7 @@ class AirQualityClient:
         url = f"{self.base_url}city"
         self.logger.debug(f"URL:\t{url}")
         response = requests.get(url, params=params, timeout=self.request_timeout)
+        self.rate_limit_remaining = response.headers.get("X-RateLimit-Remaining")
 
         data = response.json()
         self.logger.debug(f"Data received:\t{data}")

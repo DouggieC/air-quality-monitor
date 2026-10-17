@@ -1,5 +1,7 @@
 import argparse
+import json
 import logging
+from datetime import UTC, datetime
 from pathlib import Path
 
 from .client import AirQualityClient, WeatherClient
@@ -11,6 +13,24 @@ from .models import AirQualityReading, DailyForecast, HourlyForecast, WeatherRea
 from .parser import AirQualityParser, DailyForecastParser, HourlyForecastParser
 from .storage import JSONStorage
 from .storage_factory import StorageFactory
+
+
+def _load_rate_limit():
+    path = Path(Config.DATA_DIR / "rate_limit.json")
+    if path.exists():
+        with open(path, "r") as f:
+            return json.load(f)
+    return None
+
+
+def _save_rate_limit(before, after):
+    path = Path(Config.DATA_DIR / "rate_limit.json")
+    with open(path, "w") as f:
+        json.dump(
+            {"before": before, "after": {"remaining": after, "timestamp": datetime.now(UTC).isoformat()}},
+            f,
+            indent=2,
+        )
 
 
 def run_data_collection():
@@ -46,6 +66,9 @@ def run_data_collection():
     hourly_csv_storage, hourly_db_storage = sf.get_storage(HourlyForecast)
     daily_csv_storage, daily_db_storage = sf.get_storage(DailyForecast)
 
+    # Get the previous rate limit
+    rate_limits = _load_rate_limit()
+
     # All set up. Let's run the data collection pipeline!
     runner = DataCollector(
         aqc,
@@ -63,6 +86,15 @@ def run_data_collection():
         daily_db_storage=daily_db_storage,
     )
     runner.run(cities)
+
+    # Log and save rate limit usage
+    current_remaining = aqc.rate_limit_remaining
+    if rate_limits and current_remaining:
+        previous = int(rate_limits.get("after", {}).get("remaining", 0))
+        used = previous - int(current_remaining)
+        logger.info(f"IQAir API calls used this run: {used}.")
+    logger.info(f"Remaining IQAir API calls: {current_remaining}.")
+    _save_rate_limit(rate_limits, current_remaining)
 
 
 def run_feature_engineering():
@@ -150,10 +182,12 @@ def main():
             run_feature_engineering()
         case "train":
             from .trainer import Trainer
+
             logger.info("Training models")
             run_training(args.data_version, args.data_filename, args.data_description)
         case "tune":
             from .trainer import Trainer
+
             logger.info("Tuning hyperparameters")
             run_tuning(args.data_version, args.data_filename, args.data_description)
 
