@@ -89,12 +89,15 @@ def run_data_collection():
 
     # Log and save rate limit usage
     current_remaining = aqc.rate_limit_remaining
+    previous = None
     if rate_limits and current_remaining:
-        previous = int(rate_limits.get("after", {}).get("remaining", 0))
-        used = previous - int(current_remaining)
-        logger.info(f"IQAir API calls used this run: {used}.")
+        previous_val = rate_limits.get("after", {}).get("remaining")
+        if previous_val:
+            previous = int(previous_val)
+            used = previous - int(current_remaining)
+            logger.info(f"IQAir API calls used this run: {used}.")
     logger.info(f"Remaining IQAir API calls: {current_remaining}.")
-    _save_rate_limit(rate_limits, current_remaining)
+    _save_rate_limit(previous, current_remaining)
 
 
 def run_feature_engineering():
