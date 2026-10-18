@@ -92,6 +92,8 @@ class AirQualityClient:
         url = f"{self.base_url}city"
         self.logger.debug(f"URL:\t{url}")
         response = requests.get(url, params=params, timeout=self.request_timeout)
+        if response.history:
+            self.logger.info(f"Redirects: {[r.url for r in response.history]}")
         self.rate_limit_remaining = response.headers.get("X-RateLimit-Remaining")
 
         data = response.json()
