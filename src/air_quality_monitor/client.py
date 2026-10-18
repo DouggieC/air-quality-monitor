@@ -80,6 +80,7 @@ class AirQualityClient:
     def get_city_data(self, city: City) -> dict:
         # Gets air quality data for the supplied city, state, and country
         self.logger.debug("Executing method")
+        self.logger.info(f"=== IQAir API call for {city.city} ===")
 
         params = {
             "city": city.city,
