@@ -4,7 +4,6 @@
     {"city": "Berlin", "state": "Berlin", "country": "Germany", "latitude": 52.5170365, "longitude": 13.3888599, "timezone": "Europe/Berlin"},
     {"city": "Moscow", "state": "Moscow", "country": "Russia", "latitude": 55.7504461, "longitude": 37.6174943, "timezone": "Europe/Moscow"},
     {"city": "Bern", "state": "Bern", "country": "Switzerland", "latitude": 46.9484742, "longitude": 7.4521749, "timezone": "Europe/Zurich"},
-    {"city": "Ankara", "state": "Ankara", "country": "Turkey", "latitude": 39.9207886, "longitude": 32.8540482, "timezone": "Europe/Istanbul"},
     {"city": "Athens", "state": "Attica", "country": "Greece", "latitude": 37.9839412, "longitude": 23.7283052, "timezone": "Europe/Athens"},
     {"city": "Rome", "state": "Latium", "country": "Italy", "latitude": 41.8933203, "longitude": 12.4829321, "timezone": "Europe/Rome"},
     {"city": "Madrid", "state": "Madrid", "country": "Spain", "latitude": 40.4167047, "longitude": -3.7035825, "timezone": "Europe/Madrid"},
