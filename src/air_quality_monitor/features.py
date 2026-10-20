@@ -24,31 +24,42 @@ class FeatureEngineer:
         we_df["collected_at"] = we_df["collected_at"].dt.floor("h")
         we_df["forecast_for"] = we_df["forecast_for"].dt.floor("h")
 
-        print(f"aqi_df pollutant_timestamp range: {aqi_df['pollutant_timestamp'].min()} to {aqi_df['pollutant_timestamp'].max()}")
+        print(
+            f"aqi_df pollutant_timestamp range: {aqi_df['pollutant_timestamp'].min()} to {aqi_df['pollutant_timestamp'].max()}"
+        )
         print(f"we_df forecast_for range: {we_df['forecast_for'].min()} to {we_df['forecast_for'].max()}")
         print(f"as_of: {as_of}")
-        
+
         # Filter by as_of date if required
         if as_of is not None:
             self.logger.debug(f"Filtering AQI and weather dataframes by as_of={as_of}")
+            horizons = [0, 1, 2, 4, 8, 12, 24, 48]
+            target_times = [as_of + pd.Timedelta(hours=h) for h in horizons]
             aqi_df = aqi_df[
                 (aqi_df["pollutant_timestamp"] <= as_of)
                 & (aqi_df["pollutant_timestamp"] >= as_of - pd.Timedelta(hours=48))
             ]
-            we_df = we_df[
-                (we_df["forecast_for"] >= as_of) & (we_df["forecast_for"] <= as_of + pd.Timedelta(hours=48))
-            ]
+            aqi_df = aqi_df.sort_values("pollutant_timestamp").drop_duplicates(subset=["city"], keep="last")
+            # we_df = we_df[
+            #    (we_df["forecast_for"] >= as_of) & (we_df["forecast_for"] <= as_of + pd.Timedelta(hours=48))
+            # ]
+            we_df = we_df[we_df["forecast_for"].isin(target_times)]
+            we_df = we_df.sort_values("collected_at").drop_duplicates(
+                subset=["city", "forecast_for"], keep="last"
+            )
 
-        # Sort the dataframeby city and pollutant_timestamp ready for creating engineered features
+        # Sort the dataframe by city and pollutant_timestamp ready for creating engineered features
         self.logger.debug("Sorting AQI dataframe by city and pollutant_timestamp")
         aqi_df = aqi_df.sort_values(by=["city", "pollutant_timestamp"])
 
         self.logger.debug("Joining AQI and weather dataframes on city and timestamp")
+        left_join_condition = ["city"] if as_of else ["city", "pollutant_timestamp"]
+        right_join_condition = ["city"] if as_of else ["city", "forecast_for"]
         joined_df = pd.merge(
             aqi_df,
             we_df,
-            left_on=["city", "pollutant_timestamp"],
-            right_on=["city", "forecast_for"],
+            left_on=left_join_condition,
+            right_on=right_join_condition,
             how="inner",
             suffixes=("_aqi", "_we"),
         )
@@ -192,6 +203,7 @@ class FeatureEngineer:
         self.logger.debug("Executing method")
 
         df["horizon"] = (df["forecast_for"] - df["collected_at_we"]) / pd.Timedelta(hours=1)
+        print(f"Unique horizons: {sorted(df['horizon'].unique())}")
         df["hour"] = df["forecast_for"].dt.hour
         df["day_of_week"] = df["forecast_for"].dt.dayofweek
         df["month"] = df["forecast_for"].dt.month

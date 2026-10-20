@@ -37,6 +37,10 @@ class Predictor:
         as_of = datetime(2026, 10, 5, 10, 0, 0, tzinfo=timezone.utc)
         features_df = self.feature_engineer.build(as_of=as_of, include_metadata=True)  # noqa: DTZ005
         # features_df = self.feature_engineer.build(as_of=datetime.now(timezone.utc), include_metadata=True)
+        print(f"Total feature rows: {len(features_df)}")
+        print(f"Rows per city:\n{features_df['city'].value_counts()}")
+        print(f"Unique city/horizon combos: {len(features_df.groupby(['city', 'horizon']))}")
+
         predictions = []
 
         for range_name, model in self.models.items():
