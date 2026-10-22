@@ -24,17 +24,24 @@ class FeatureEngineer:
         we_df["collected_at"] = we_df["collected_at"].dt.floor("h")
         we_df["forecast_for"] = we_df["forecast_for"].dt.floor("h")
 
+        # IQAir doesn't necessarily produce a reading every hour, meaning duplicates on city, pollutant_timestamp, with collected_at an hour apart. Need to deduplicate
+        aqi_df = aqi_df.sort_values("collected_at").drop_duplicates(subset=["city", "pollutant_timestamp"], keep="last")
+
         print(
             f"aqi_df pollutant_timestamp range: {aqi_df['pollutant_timestamp'].min()} to {aqi_df['pollutant_timestamp'].max()}"
         )
         print(f"we_df forecast_for range: {we_df['forecast_for'].min()} to {we_df['forecast_for'].max()}")
         print(f"as_of: {as_of}")
 
+        # Save full AQI history before filtering
+        aqi_full = aqi_df
+        
         # Filter by as_of date if required
         if as_of is not None:
             self.logger.debug(f"Filtering AQI and weather dataframes by as_of={as_of}")
             horizons = [0, 1, 2, 4, 8, 12, 24, 48]
             target_times = [as_of + pd.Timedelta(hours=h) for h in horizons]
+
             aqi_df = aqi_df[
                 (aqi_df["pollutant_timestamp"] <= as_of)
                 & (aqi_df["pollutant_timestamp"] >= as_of - pd.Timedelta(hours=48))
@@ -64,10 +71,12 @@ class FeatureEngineer:
             suffixes=("_aqi", "_we"),
         )
 
+        joined_df["ref_time"] = as_of if as_of is not None else joined_df["collected_at_we"]
+
         # Create AQI lag & rolling features
         self.logger.debug("Creating engineered features")
-        joined_df = self._create_lag_features(joined_df, aqi_df)
-        joined_df = self._create_rolling_features(joined_df, aqi_df)
+        joined_df = self._create_lag_features(joined_df, aqi_full)
+        joined_df = self._create_rolling_features(joined_df, aqi_full)
         joined_df = self._create_temporal_features(joined_df)
         joined_df = self._create_weather_trends(joined_df)
         joined_df = self._encode_categoricals(joined_df, include_metadata)
@@ -92,6 +101,7 @@ class FeatureEngineer:
                 "latitude_we",
                 "longitude_we",
                 "timezone_we",
+                "ref_time",
             ],
             axis=1,
         )
@@ -135,7 +145,7 @@ class FeatureEngineer:
         lags = [0, 1, 2, 4, 8, 12, 24, 48]
         for lag in lags:
             # Calculate the time we want to look up
-            df["_lookup_time"] = df["collected_at_we"] - pd.Timedelta(hours=lag)
+            df["_lookup_time"] = df["ref_time"] - pd.Timedelta(hours=lag)
 
             # Rename AQI column to avoid conflicts
             lookup = aqi_lookup.rename(
@@ -188,7 +198,7 @@ class FeatureEngineer:
 
         df = df.merge(
             aqi_lookup,
-            left_on=["city", "collected_at_we"],
+            left_on=["city", "ref_time"],
             right_on=["city", "_pt_rolling"],
             how="left",
         )
@@ -202,7 +212,7 @@ class FeatureEngineer:
         """Assumes df is sorted by city"""
         self.logger.debug("Executing method")
 
-        df["horizon"] = (df["forecast_for"] - df["collected_at_we"]) / pd.Timedelta(hours=1)
+        df["horizon"] = (df["forecast_for"] - df["ref_time"]) / pd.Timedelta(hours=1)
         print(f"Unique horizons: {sorted(df['horizon'].unique())}")
         df["hour"] = df["forecast_for"].dt.hour
         df["day_of_week"] = df["forecast_for"].dt.dayofweek
@@ -245,7 +255,7 @@ class FeatureEngineer:
         for source_col, lag, new_col in trends:
             self.logger.debug(f"Processing {source_col}, {lag}, {new_col}")
             # Calculate the time we want to look up
-            df["_lookup_time"] = df["collected_at_we"] - pd.Timedelta(hours=lag)
+            df["_lookup_time"] = df["ref_time"] - pd.Timedelta(hours=lag)
 
             # Rename weather feature & timestamp column to avoid conflicts
             lookup = current[["city", "collected_at_we", source_col]].rename(
