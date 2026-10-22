@@ -48,6 +48,20 @@ def _save_rate_limit(before, after):
             indent=2,
         )
 
+def _parse_as_of(as_of_str: str) -> datetime:
+    try:
+        as_of = datetime.fromisoformat(as_of_str)
+    except ValueError:
+        raise argparse.ArgumentTypeError("Date must be a valid ISO string (e.g. 2026-10-22T17:00)") from None 
+    
+    if as_of.tzinfo is None:
+        as_of = as_of.replace(tzinfo=UTC)
+    else:
+        as_of = as_of.astimezone(UTC)
+
+    return as_of
+
+
 
 def run_data_collection():
 
@@ -134,7 +148,7 @@ def run_feature_engineering():
         json.dump(cols, f, indent=4)
 
 
-def run_prediction():
+def run_prediction(as_of):
     from .predictor import Predictor
 
     logger = logging.getLogger(__name__)
@@ -146,9 +160,14 @@ def run_prediction():
     # Make predictions
     engineer = FeatureEngineer(aqi_storage, we_storage)
     predictor = Predictor(engineer)
-    predictions = predictor.predict()
+    predictions = predictor.predict(as_of)
 
-    # Store them
+    # Store them if it's a real prediction (time=now)
+    # Otherwise, stop
+    if as_of is not None:
+        logger.info("Test run - skipping save")
+        return
+    
     sf = StorageFactory(Config)
     pred_csv_storage, pred_db_storage = sf.get_storage(Prediction)
     for storage in [pred_csv_storage, pred_db_storage]:
@@ -217,8 +236,7 @@ def main():
     subparsers = arg_parser.add_subparsers(dest="command")
     subparsers.add_parser("collect")
     subparsers.add_parser("prepare")
-    subparsers.add_parser("predict")
-
+    
     train_parser = subparsers.add_parser("train")
     train_parser.add_argument("--data-version", required=True)
     train_parser.add_argument("--data-filename", required=True)
@@ -229,7 +247,14 @@ def main():
     tune_parser.add_argument("--data-filename", required=True)
     tune_parser.add_argument("--data-description", required=True)
 
+    predict_parser = subparsers.add_parser("predict")
+    predict_parser.add_argument("--as-of", type=_parse_as_of, required=False)
+
     args = arg_parser.parse_args()
+
+    # Error if giving an as_of date to prediction in prod
+    if Config.IS_PRODUCTION and args.command == 'predict' and args.as_of is not None:
+        arg_parser.error("Cannot provide as_of date in production")
 
     match args.command:
         case "collect":
@@ -250,7 +275,7 @@ def main():
             run_tuning(args.data_version, args.data_filename, args.data_description)
         case "predict":
             logger.info("Predicting air quality")
-            run_prediction()
+            run_prediction(args.as_of)
 
 
 if __name__ == "__main__":

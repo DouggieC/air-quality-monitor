@@ -23,15 +23,17 @@ class FeatureEngineer:
         aqi_df["pollutant_timestamp"] = aqi_df["pollutant_timestamp"].dt.floor("h")
         we_df["collected_at"] = we_df["collected_at"].dt.floor("h")
         we_df["forecast_for"] = we_df["forecast_for"].dt.floor("h")
+        if as_of is not None:
+            as_of = pd.Timestamp(as_of).floor("h")
 
         # IQAir doesn't necessarily produce a reading every hour, meaning duplicates on city, pollutant_timestamp, with collected_at an hour apart. Need to deduplicate
         aqi_df = aqi_df.sort_values("collected_at").drop_duplicates(subset=["city", "pollutant_timestamp"], keep="last")
 
-        print(
+        self.logger.debug(
             f"aqi_df pollutant_timestamp range: {aqi_df['pollutant_timestamp'].min()} to {aqi_df['pollutant_timestamp'].max()}"
         )
-        print(f"we_df forecast_for range: {we_df['forecast_for'].min()} to {we_df['forecast_for'].max()}")
-        print(f"as_of: {as_of}")
+        self.logger.debug(f"we_df forecast_for range: {we_df['forecast_for'].min()} to {we_df['forecast_for'].max()}")
+        self.logger.debug(f"as_of: {as_of}")
 
         # Save full AQI history before filtering
         aqi_full = aqi_df
@@ -47,9 +49,7 @@ class FeatureEngineer:
                 & (aqi_df["pollutant_timestamp"] >= as_of - pd.Timedelta(hours=48))
             ]
             aqi_df = aqi_df.sort_values("pollutant_timestamp").drop_duplicates(subset=["city"], keep="last")
-            # we_df = we_df[
-            #    (we_df["forecast_for"] >= as_of) & (we_df["forecast_for"] <= as_of + pd.Timedelta(hours=48))
-            # ]
+            
             we_df = we_df[we_df["forecast_for"].isin(target_times)]
             we_df = we_df.sort_values("collected_at").drop_duplicates(
                 subset=["city", "forecast_for"], keep="last"
@@ -213,7 +213,6 @@ class FeatureEngineer:
         self.logger.debug("Executing method")
 
         df["horizon"] = (df["forecast_for"] - df["ref_time"]) / pd.Timedelta(hours=1)
-        print(f"Unique horizons: {sorted(df['horizon'].unique())}")
         df["hour"] = df["forecast_for"].dt.hour
         df["day_of_week"] = df["forecast_for"].dt.dayofweek
         df["month"] = df["forecast_for"].dt.month
