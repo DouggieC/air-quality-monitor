@@ -61,6 +61,22 @@ def _parse_as_of(as_of_str: str) -> datetime:
 
     return as_of
 
+def _mask_keys(key: str | None) -> str:
+    if not key:
+        return "Key missing"
+    
+    if len(key) <= 6:
+        # Key is very short. Mask the whole thing
+        masked_key = "*" * len(key)
+        return masked_key
+    
+    last_chars = key[-6:]
+    star_count = len(key) - 6
+    stars = "*" * star_count
+    masked_key = stars + last_chars
+    return masked_key
+
+
 
 
 def run_data_collection():
@@ -214,9 +230,9 @@ def main():
     setup_logging(log_level=Config.LOG_LEVEL, log_dir=Config.LOG_DIR, log_to_file=Config.LOG_TO_FILE)
     logger = logging.getLogger(__name__)
     logger.debug("Environment variables:")
-    logger.debug(f"IQAIR_API_KEY:\t{Config.IQAIR_API_KEY}")
+    logger.debug(f"IQAIR_API_KEY:\t{_mask_keys(Config.IQAIR_API_KEY)}")
     logger.debug(f"IQAIR_BASE_URL:\t{Config.IQAIR_BASE_URL}")
-    logger.debug(f"OWM_API_KEY:\t{Config.OWM_API_KEY}")
+    logger.debug(f"OWM_API_KEY:\t{_mask_keys(Config.OWM_API_KEY)}")
     logger.debug(f"OWM_ONECALL_BASE_URL:\t{Config.OWM_ONECALL_BASE_URL}")
     logger.debug(f"OWM_GEO_BASE_URL:\t{Config.OWM_GEO_BASE_URL}")
     logger.debug(f"BASE_DIR:\t{Config.BASE_DIR}")

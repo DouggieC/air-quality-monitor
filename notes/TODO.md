@@ -11,7 +11,8 @@
 
 ## Security
 
-- [ ] **Stop logging API keys.** At `DEBUG` level, `main()` logs `IQAIR_API_KEY` and `OWM_API_KEY` in full (the "Environment variables" block), and with `LOG_TO_FILE` on they also go into the log files. Mask them (e.g. show only the last 4 characters) or drop those lines. If those logs have ever been shared or copied off the machine, rotate the keys
+- [x] **Stop logging API keys.** Done 2026-10-23: `_mask_keys()` in `main.py` masks both keys in the debug logging
+- [ ] **Clean up keys already in old logs.** The existing log files still contain the full keys from earlier runs: the dev `log/air_quality_monitor.log`, and probably the production logs too. Delete or clean those entries, and rotate the keys if the logs have ever been shared or copied off the machine
 
 ## Data collection
 
@@ -33,4 +34,4 @@
 - [ ] Make rolling features time-based (`.rolling("6h", on="pollutant_timestamp")`) rather than counting rows, because there are gaps between hourly readings
 - [ ] Weather trend features are NaN in prediction mode: `we_df` is filtered to the target times, so the horizon-0 rows from 6 and 24 hours earlier aren't available
 - [ ] Log the training column list with each model in MLflow (`mlflow.log_dict`) and load it in `Predictor`, instead of the shared `config/training_columns.json`
-- [ ] Remove the debug `print`s from `features.py` and `predictor.py`, and the hard-coded `as_of` in `Predictor.predict()`
+- [x] Remove the debug `print`s from `features.py` and `predictor.py`, and the hard-coded `as_of` in `Predictor.predict()`
