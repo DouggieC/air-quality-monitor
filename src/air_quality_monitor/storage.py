@@ -24,8 +24,21 @@ class BaseStorage(ABC):
         pass
 
     @abstractmethod
-    def read(self) -> list[str]:
+    def read(self, time_filter_col: str | None = None, start: datetime | None = None, end: datetime | None = None) -> pd.DataFrame:
         pass
+
+    def _validate_filters(self, time_filter_col, start, end) -> None:
+        if time_filter_col:
+            if not start and not end:
+                raise ValueError(f"At least one of start and end date must be specified for {time_filter_col}")
+            if start and not isinstance(start, datetime):
+                raise TypeError("Start date must be a valid datetime object")
+            if end and not isinstance(end, datetime):
+                raise TypeError("End date must be a valid datetime object")
+        else:
+            if start or end:
+                raise ValueError("Start and/or end date specified, but no filter column given")
+
 
 
 class FileStorage(BaseStorage):
@@ -43,6 +56,7 @@ class FileStorage(BaseStorage):
         self.logger.debug(f"Datetime columns: {dates}")
         return dates
 
+                
 
 class CSVStorage(FileStorage):
     # A class to handle CSV file storage
@@ -69,11 +83,14 @@ class CSVStorage(FileStorage):
         except Exception as e:  # noqa: BLE001
             self.logger.error(f"Error while saving to file: {e}")
 
-    def read(self) -> pd.DataFrame:
+    def read(self, time_filter_col: str | None = None, start: datetime | None = None, end: datetime | None = None) -> pd.DataFrame:
         # Read the specified CSV file into a dataframe
         self.logger.debug("Executing method")
         self.logger.info(f"Reading CSV file {self.filepath}")
 
+        # Do we have a date filter supplied?
+        self._validate_filters(time_filter_col=time_filter_col, start=start, end=end)
+        
         if not self.filepath.exists():
             self.logger.error(f"File not found: {self.filepath}")
             raise FileNotFoundError(f"File not found: {self.filepath}")
@@ -150,7 +167,7 @@ class JSONStorage(FileStorage):
         except Exception as e:
             self.logger.error(f"Error while saving to file: {e}")
 
-    def read(self) -> list[str]:  # list[AirQualityReading]:
+    def read(self, time_filter_col: str | None = None, start: datetime | None = None, end: datetime | None = None) -> list[str]:  # list[AirQualityReading]:
         # Implement JSON fetching logic here
         pass
 
@@ -209,10 +226,13 @@ class DBStorage(BaseStorage):
             self.logger.error(f"Error saving to database: {e}")
             raise
 
-    def read(self) -> pd.DataFrame:
+    def read(self, time_filter_col: str | None = None, start: datetime | None = None, end: datetime | None = None) -> pd.DataFrame:
         self.logger.debug("Executing method")
         self.logger.info("Reading from DB")
 
+        # Do we have a date filter supplied?
+        self._validate_filters(time_filter_col=time_filter_col, start=start, end=end)
+        
         try:
             query = select(
                 self.model_class,
@@ -223,6 +243,14 @@ class DBStorage(BaseStorage):
                 DBCity.longitude,
                 DBCity.timezone,
             ).join(DBCity)
+
+            if time_filter_col:
+                table_col = self.model_class.__table__.columns[time_filter_col]
+                if start:
+                    query = query.where(table_col >= start)
+                if end:
+                    query = query.where(table_col <= end)
+
             df = pd.read_sql(query, self.engine)
 
             # Don't need city_id as we have the city info from the join
@@ -265,6 +293,6 @@ class ParquetStorage(FileStorage):
     def save(self, reading: Reading, base_filename: Path):
         raise NotImplementedError(self.not_implemented_msg)
 
-    def fetch(self) -> list[Reading]:
+    def read(self, time_filter_col: str | None = None, start: datetime | None = None, end: datetime | None = None) -> list[Reading]:
         # Implement Parquet fetching logic here
         raise NotImplementedError(self.not_implemented_msg)

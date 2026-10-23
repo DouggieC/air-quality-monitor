@@ -2,7 +2,7 @@ import logging
 from datetime import datetime, timezone
 
 from .exceptions import ParseError
-from .models import AirQualityReading, City, WeatherReading, HourlyForecast, DailyForecast
+from .models import AirQualityReading, City, DailyForecast, HourlyForecast, WeatherReading
 
 
 class ResponseParser:
