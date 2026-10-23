@@ -1,0 +1,56 @@
+# Claude Code Session Handover Summary
+Date: 2026-10-20
+
+## Current Focus
+Debugging duplicate/missing predictions in the ML prediction pipeline.
+
+## Completed This Session
+
+### CSV Index Column Fix
+- Both `data/hourly_forecast.csv` and `data/aqi_history.csv` had an unnamed index column causing field shifts
+- Stripped index column and removed corrupted rows (114,816 from hourly_forecast, 1,750 from aqi_history)
+- CSVStorage.save() already has `index=False` (line 66 in storage.py), so future writes are clean
+
+### FeatureEngineer.build() Prediction Mode (features.py lines 34-65)
+Changed logic for when `as_of` is set (prediction mode):
+1. Filter AQI to 48-hour window, then deduplicate to most recent per city (line 42)
+2. Filter weather to specific horizon target times only (line 46)
+3. Deduplicate weather to most recent forecast per city/hour (lines 47-49)
+4. Changed merge to join on city only for prediction (lines 56-57)
+
+## Current Issue
+Predictions still failing with `ValueError: Input data must be 2 dimensional and non empty`
+
+Debug output shows:
+- 88 feature rows (correct: 11 cities × 8 horizons)
+- But "Unique city/horizon combos: 66" (should be 88)
+- Medium range batch is empty: `model_input shape: (0, 52)`
+
+Root cause: Horizon calculation in `_create_temporal_features` (line 194):
+```python
+df["horizon"] = (df["forecast_for"] - df["collected_at_we"]) / pd.Timedelta(hours=1)
+```
+Uses `collected_at_we` (when forecast was fetched) instead of `as_of`. This produces wrong horizon values.
+
+Added debug print at line 195:
+```python
+print(f"Unique horizons: {sorted(df['horizon'].unique())}")
+```
+
+## Next Step
+Fix horizon calculation for prediction mode. Options:
+1. Pass `as_of` to `_create_temporal_features` and use it when set
+2. Calculate horizon from `forecast_for - as_of` instead of `forecast_for - collected_at_we`
+
+The expected horizons are [0, 1, 2, 4, 8, 12, 24, 48], but actual values are likely offset due to the timing mismatch.
+
+## Key Files
+- `src/air_quality_monitor/features.py` - FeatureEngineer class, build() method
+- `src/air_quality_monitor/predictor.py` - Predictor class, predict() method
+- `src/air_quality_monitor/storage.py` - CSVStorage, DBStorage classes
+
+## Model Configuration
+- Using LightGBM across all horizons (short/medium/long)
+- Horizons: short=[0,1,2], medium=[4,8,12], long=[24,48]
+- Models loaded from MLflow registry: `models:/lightgbm_{range}/latest`
+- 52 training features, defined in `config/training_columns.json`
