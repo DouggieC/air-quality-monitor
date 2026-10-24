@@ -7,7 +7,7 @@
   - Remove rows where the columns have shifted left (a state name in `city`, the country in `state`, etc.)
   - Make it safe to run more than once (skip if no index column is found) and write to a new file or keep a backup before overwriting
   - Notes: `scripts/fix_csvs.py` is an earlier attempt. It has a hard-coded dev `DATA_DIR`, and its `to_csv` calls (lines 109, 136) don't pass `index=False`, so it would bring the bug back
-- [ ] **Find what is still writing the index column in production** and fix it at the source. `CSVStorage.save()` has `index=False`, so the cause is somewhere else (an older deployed version? a script?)
+- [ ] ~~Find what is still writing the index column~~ **Root cause found (2026-10-24): nothing is still writing it.** The header and older rows have an index column, probably from `scripts/fix_csvs.py` (2026-09-28, `to_csv` without `index=False`). Since about 2026-10-01, `CSVStorage.save()` has been appending correct rows with no index, so they have one column fewer than the header, and pandas reads them shifted one column left (state names in `city`). In the dev copy: `aqi_history.csv` 3,703 bad rows (7.9%) from row 42,962; `hourly_forecast.csv` 242,976 bad (34.2%) from row 468,040. **Fix:** the repair job above must handle *both* row formats (old rows with an index, new rows without): drop the index from the old ones and keep the new ones as they are, not delete them. After that, new writes will line up. Check whether production has the same problem
 
 ## Security
 
@@ -24,13 +24,8 @@
 
 ## Feature engineering / prediction
 
-- [ ] **Filter in SQL when predicting, to cut memory use.** `build()` reads whole tables and then filters in pandas. In the dev codespace (8 GB RAM, no swap, about 2 GB free), `predict` was killed ("Terminated") while reading the DB. `hourly_forecast` has 711k rows, loaded through `pd.read_sql` (`storage.py:226`)
-  - Give `read()` optional start/end times and use them in the query's `WHERE` clause (`storage.py:217`)
-  - Weather when predicting: only `forecast_for` from `as_of` to `as_of + 48h`
-  - AQI when predicting: from about `as_of - 72h` to `as_of` (48h longest lag + 24h rolling window, plus some margin)
-  - Training passes no start/end and reads everything, as now
-  - Matters most in production, especially on a Raspberry Pi (`k8s-dev-pi`). See also the old `memory_problems` branch
-
+- [x] **Filter by time when predicting, to cut memory use.** Done 2026-10-24: `read()` takes an optional `time_filter_col`/`start`/`end` (DB: `.where()` in the query; CSV: chunked read). `build()` passes the windows in prediction mode. Prediction peak memory fell from >2 GB (killed) to ~430 MB; training output unchanged (same row count and SHA-256)
+- [ ] **Training (`prepare`) still reads the whole of every table**, so it needs ~2 GB+ and will grow with the data. Options: chunked feature building, or Parquet for the large tables/`training_data.csv`
 - [ ] Make rolling features time-based (`.rolling("6h", on="pollutant_timestamp")`) rather than counting rows, because there are gaps between hourly readings
 - [ ] Weather trend features are NaN in prediction mode: `we_df` is filtered to the target times, so the horizon-0 rows from 6 and 24 hours earlier aren't available
 - [ ] Log the training column list with each model in MLflow (`mlflow.log_dict`) and load it in `Predictor`, instead of the shared `config/training_columns.json`

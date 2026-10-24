@@ -96,9 +96,27 @@ class CSVStorage(FileStorage):
             raise FileNotFoundError(f"File not found: {self.filepath}")
 
         try:
-            df = pd.read_csv(self.filepath, parse_dates=self._get_datetime_cols())
+            if not time_filter_col:
+                df = pd.read_csv(self.filepath, parse_dates=self._get_datetime_cols())
+            else:
+                chunks = []
+                with pd.read_csv(self.filepath, parse_dates=self._get_datetime_cols(), chunksize=100000) as reader:
+                    for chunk in reader:
+                        # Ensure we have a UTC-aware datetime:
+                        chunk[time_filter_col] = pd.to_datetime(chunk[time_filter_col], utc=True, format="ISO8601")
+
+                        # Filter
+                        if start:
+                            chunk = chunk[chunk[time_filter_col] >= start]
+                        if end:
+                            chunk = chunk[chunk[time_filter_col] <= end]
+
+                        chunks.append(chunk)
+
+                df = pd.concat(chunks, ignore_index=True)
+
         except Exception as e:
-            self.logger.error(f"Error reading {self.filepath}: {e}")
+            self.logger.exception(f"Error reading {self.filepath}: {e}")
             raise
 
         # Make sure datetime objects are correctly typed

@@ -15,17 +15,26 @@ class FeatureEngineer:
 
     def build(self, as_of: datetime | None = None, include_metadata: bool = False) -> pd.DataFrame:
         self.logger.debug("Executing method")
-        aqi_df = self.aqi_storage.read()
-        we_df = self.weather_storage.read()
+        
+        if as_of is not None:
+            as_of = pd.Timestamp(as_of).floor("h")
+            filter_aqi="pollutant_timestamp"
+            filter_we="forecast_for"
+            start_aqi = as_of - pd.Timedelta(hours=72) # 48 hours required, but leave a margin in case of missing vals
+            end_aqi = as_of + pd.Timedelta(hours=1) # Add an extra hour to allow for flooring
+            end_we = as_of + pd.Timedelta(hours=49) # Add an extra hour to allow for flooring
+        else:
+            filter_aqi = filter_we = start_aqi = end_aqi = end_we = None
+        
+        aqi_df = self.aqi_storage.read(time_filter_col=filter_aqi, start=start_aqi, end=end_aqi)
+        we_df = self.weather_storage.read(time_filter_col=filter_we, start=as_of, end=end_we)
 
         # Ensure joining timestamps are on the hour
         self.logger.debug("Flooring timestamps to the hour for joining")
         aqi_df["pollutant_timestamp"] = aqi_df["pollutant_timestamp"].dt.floor("h")
         we_df["collected_at"] = we_df["collected_at"].dt.floor("h")
         we_df["forecast_for"] = we_df["forecast_for"].dt.floor("h")
-        if as_of is not None:
-            as_of = pd.Timestamp(as_of).floor("h")
-
+        
         # IQAir doesn't necessarily produce a reading every hour, meaning duplicates on city, pollutant_timestamp, with collected_at an hour apart. Need to deduplicate
         aqi_df = aqi_df.sort_values("collected_at").drop_duplicates(subset=["city", "pollutant_timestamp"], keep="last")
 
