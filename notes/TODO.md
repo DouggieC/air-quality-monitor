@@ -2,12 +2,10 @@
 
 ## Production data fixes
 
-- [ ] **One-off prod job in `scripts/` to repair the CSVs**: do again what was done by hand to the dev data on 2026-10-20:
-  - Strip the unnamed index column (header begins `,city,...`) from `aqi_history.csv` and `hourly_forecast.csv`
-  - Remove rows where the columns have shifted left (a state name in `city`, the country in `state`, etc.)
-  - Make it safe to run more than once (skip if no index column is found) and write to a new file or keep a backup before overwriting
-  - Notes: `scripts/fix_csvs.py` is an earlier attempt. It has a hard-coded dev `DATA_DIR`, and its `to_csv` calls (lines 109, 136) don't pass `index=False`, so it would bring the bug back
-- [ ] ~~Find what is still writing the index column~~ **Root cause found (2026-10-24): nothing is still writing it.** The header and older rows have an index column, probably from `scripts/fix_csvs.py` (2026-09-28, `to_csv` without `index=False`). Since about 2026-10-01, `CSVStorage.save()` has been appending correct rows with no index, so they have one column fewer than the header, and pandas reads them shifted one column left (state names in `city`). In the dev copy: `aqi_history.csv` 3,703 bad rows (7.9%) from row 42,962; `hourly_forecast.csv` 242,976 bad (34.2%) from row 468,040. **Fix:** the repair job above must handle *both* row formats (old rows with an index, new rows without): drop the index from the old ones and keep the new ones as they are, not delete them. After that, new writes will line up. Check whether production has the same problem
+- [x] **Repair script written: `scripts/fix_csvs2.py`** (2026-10-24). Removes the index column from the header and old rows, and keeps the newer rows as they are, which lines them up. Safe to run more than once. Tested on copies of the dev CSVs: all 46,665 AQI and 711,016 weather rows kept, matching the DB, and every timestamp parses
+  - Root cause: nothing is still writing the index. The header and older rows got it from `scripts/fix_csvs.py` (2026-09-28, `to_csv` without `index=False`). Since about 2026-10-01 `CSVStorage.save()` has appended correct rows with no index, which pandas then read shifted one column left
+- [ ] **Apply the repair to the dev CSVs and in production.** Edit `DATA_DIR` in the script, run it, back up each `.csv`, then rename `.new` to `.csv`. In production, do it while the collector isn't running, or rows appended in between are lost
+- [ ] **Check production's `daily_forecast.csv`.** If its header starts with a comma (`,city,...`), add a third call for it in `fix_csvs2.py`. There's no CSV copy in dev, only the DB table
 
 ## Security
 
