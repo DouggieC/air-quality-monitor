@@ -121,7 +121,6 @@ class CSVStorage(FileStorage):
 
         # Make sure datetime objects are correctly typed
         for col in self._get_datetime_cols():
-            print(f"Checking column {col} for datetime type")
             if not pd.api.types.is_datetime64_any_dtype(df[col]):
                 self.logger.debug(f"Converting column {col} to datetime")
                 df[col] = pd.to_datetime(df[col], utc=True, format="ISO8601")
@@ -269,7 +268,11 @@ class DBStorage(BaseStorage):
                 if end:
                     query = query.where(table_col <= end)
 
-            df = pd.read_sql(query, self.engine)
+            # Stream results for client-side memory efficiency
+            query = query.execution_options(stream_results=True)
+
+            with self.engine.connect() as conn:
+                df = pd.concat(pd.read_sql(query, conn, chunksize=100000), ignore_index=True)
 
             # Don't need city_id as we have the city info from the join
             if "city_id" in df.columns:

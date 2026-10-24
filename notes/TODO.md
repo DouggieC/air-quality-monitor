@@ -23,7 +23,7 @@
 ## Feature engineering / prediction
 
 - [x] **Filter by time when predicting, to cut memory use.** Done 2026-10-24: `read()` takes an optional `time_filter_col`/`start`/`end` (DB: `.where()` in the query; CSV: chunked read). `build()` passes the windows in prediction mode. Prediction peak memory fell from >2 GB (killed) to ~430 MB; training output unchanged (same row count and SHA-256)
-- [ ] **Training (`prepare`) still reads the whole of every table**, so it needs ~2 GB+ and will grow with the data. Options: chunked feature building, or Parquet for the large tables/`training_data.csv`
+- [x] **Cut `prepare` memory.** Done 2026-10-24: the peak (1.9 GB) was temporary Python objects inside `pd.read_sql`, not the DataFrame (172 MB). `DBStorage.read()` now always reads in chunks, with `stream_results=True` so it also streams on PostgreSQL/MySQL. Peak is now ~740 MB; output unchanged (same SHA-256)
 - [ ] Make rolling features time-based (`.rolling("6h", on="pollutant_timestamp")`) rather than counting rows, because there are gaps between hourly readings
 - [ ] Weather trend features are NaN in prediction mode: `we_df` is filtered to the target times, so the horizon-0 rows from 6 and 24 hours earlier aren't available
 - [ ] Log the training column list with each model in MLflow (`mlflow.log_dict`) and load it in `Predictor`, instead of the shared `config/training_columns.json`
