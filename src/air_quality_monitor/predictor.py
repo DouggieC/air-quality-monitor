@@ -69,7 +69,6 @@ class Predictor:
                     "forecast_for",
                 ],
             )
-            model_input["heat_index"] = model_input["heat_index"].fillna(0).astype(float)
             
             # Load the columns list used for training
             with open(Config.CONFIG_DIR / "training_columns.json", "r") as f:

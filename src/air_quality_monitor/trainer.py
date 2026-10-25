@@ -199,7 +199,7 @@ class Trainer:
     def _load_data(self, include_validation=False):
         self.logger.debug("Executing method")
         self.logger.debug("Reading data")
-        df = pd.read_csv(self.data_path)
+        df = pd.read_parquet(self.data_path)
 
         # Sort chronologically
         self.logger.debug("Sorting data")

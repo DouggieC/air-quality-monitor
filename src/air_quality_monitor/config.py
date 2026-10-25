@@ -25,7 +25,7 @@ class Config:
     CONFIG_DIR = BASE_DIR / "config"
     LOG_DIR = BASE_DIR / "log"
     MODELS_DIR = BASE_DIR / "models"
-    TRAINING_DATA_PATH = DATA_DIR / "training_data.csv"
+    TRAINING_DATA_PATH = DATA_DIR / "training_data.parquet"
 
     # How long before HTTP requests time out?
     REQUEST_TIMEOUT = 30

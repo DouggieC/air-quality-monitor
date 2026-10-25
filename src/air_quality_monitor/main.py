@@ -156,7 +156,7 @@ def run_feature_engineering():
     # Run feature engineering
     engineer = FeatureEngineer(aqi_storage, we_storage)
     training_df = engineer.build()
-    training_df.to_csv(Config.TRAINING_DATA_PATH, index=False)
+    training_df.to_parquet(Config.TRAINING_DATA_PATH, index=False)
 
     # Save list of training columns used - needed to ensure prediction trains on same cols
     cols = [c for c in training_df.columns if c not in ["aqi", "collected_at"]]

@@ -98,6 +98,7 @@ class FeatureEngineer:
                 "temperature_aqi",
                 "humidity_aqi",
                 "pressure_aqi",
+                "heat_index",
                 "wind_speed_aqi",
                 "wind_direction_aqi",
                 "weather_timestamp",
