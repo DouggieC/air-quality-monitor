@@ -22,12 +22,13 @@ class FeatureEngineer:
             filter_we="forecast_for"
             start_aqi = as_of - pd.Timedelta(hours=72) # 48 hours required, but leave a margin in case of missing vals
             end_aqi = as_of + pd.Timedelta(hours=1) # Add an extra hour to allow for flooring
+            start_we = as_of - pd.Timedelta(hours=25) # 24 hours required; allow one for flooring
             end_we = as_of + pd.Timedelta(hours=49) # Add an extra hour to allow for flooring
         else:
-            filter_aqi = filter_we = start_aqi = end_aqi = end_we = None
+            filter_aqi = filter_we = start_aqi = end_aqi = start_we = end_we = None
         
         aqi_df = self.aqi_storage.read(time_filter_col=filter_aqi, start=start_aqi, end=end_aqi)
-        we_df = self.weather_storage.read(time_filter_col=filter_we, start=as_of, end=end_we)
+        we_df = self.weather_storage.read(time_filter_col=filter_we, start=start_we, end=end_we)
 
         # Ensure joining timestamps are on the hour
         self.logger.debug("Flooring timestamps to the hour for joining")
@@ -44,8 +45,9 @@ class FeatureEngineer:
         self.logger.debug(f"we_df forecast_for range: {we_df['forecast_for'].min()} to {we_df['forecast_for'].max()}")
         self.logger.debug(f"as_of: {as_of}")
 
-        # Save full AQI history before filtering
+        # Save full history before filtering
         aqi_full = aqi_df
+        we_full = we_df
         
         # Filter by as_of date if required
         if as_of is not None:
@@ -87,7 +89,7 @@ class FeatureEngineer:
         joined_df = self._create_lag_features(joined_df, aqi_full)
         joined_df = self._create_rolling_features(joined_df, aqi_full)
         joined_df = self._create_temporal_features(joined_df)
-        joined_df = self._create_weather_trends(joined_df)
+        joined_df = self._create_weather_trends(joined_df, we_full)
         joined_df = self._encode_categoricals(joined_df, include_metadata)
 
         # Drop unnecessary columns
@@ -246,19 +248,19 @@ class FeatureEngineer:
 
         return df
 
-    def _create_weather_trends(self, df: pd.DataFrame) -> pd.DataFrame:
+    def _create_weather_trends(self, df: pd.DataFrame, we_df: pd.DataFrame) -> pd.DataFrame:
         self.logger.debug("Executing method")
 
-        current = df[df["horizon"] == 0][
-            ["city", "collected_at_we", "temperature_we", "pressure_we", "humidity_we"]
-        ].drop_duplicates(subset=["city", "collected_at_we"])
+        current = we_df[we_df["forecast_for"] == we_df["collected_at"]][
+            ["city", "collected_at", "temperature", "pressure", "humidity"]
+        ].drop_duplicates(subset=["city", "collected_at"])
 
         trends = [
             # source column, lag hours, new column
-            ("temperature_we", 24, "temp_change_24h"),
-            ("pressure_we", 6, "pressure_change_6h"),
-            ("pressure_we", 24, "pressure_change_24h"),
-            ("humidity_we", 24, "humidity_change_24h"),
+            ("temperature", 24, "temp_change_24h"),
+            ("pressure", 6, "pressure_change_6h"),
+            ("pressure", 24, "pressure_change_24h"),
+            ("humidity", 24, "humidity_change_24h"),
         ]
 
         for source_col, lag, new_col in trends:
@@ -267,15 +269,15 @@ class FeatureEngineer:
             df["_lookup_time"] = df["ref_time"] - pd.Timedelta(hours=lag)
 
             # Rename weather feature & timestamp column to avoid conflicts
-            lookup = current[["city", "collected_at_we", source_col]].rename(
-                columns={"collected_at_we": f"_ca_{lag}", source_col: f"_past_{source_col}"}
+            lookup = current[["city", "collected_at", source_col]].rename(
+                columns={"collected_at": f"_ca_{lag}", source_col: f"_past_{source_col}"}
             )
 
             df = df.merge(
                 lookup, left_on=["city", "_lookup_time"], right_on=["city", f"_ca_{lag}"], how="left"
             )
 
-            df[new_col] = df[source_col] - df[f"_past_{source_col}"]
+            df[new_col] = df[f"{source_col}_we"] - df[f"_past_{source_col}"]
 
             # Drop temp columns
             df = df.drop(columns=["_lookup_time", f"_ca_{lag}", f"_past_{source_col}"])

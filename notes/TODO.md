@@ -30,9 +30,9 @@
 - [x] **Filter by time when predicting, to cut memory use.** Done 2026-10-24: `read()` takes an optional `time_filter_col`/`start`/`end` (DB: `.where()` in the query; CSV: chunked read). `build()` passes the windows in prediction mode. Prediction peak memory fell from >2 GB (killed) to ~430 MB; training output unchanged (same row count and SHA-256)
 - [x] **Cut `prepare` memory.** Done 2026-10-24: the peak (1.9 GB) was temporary Python objects inside `pd.read_sql`, not the DataFrame (172 MB). `DBStorage.read()` now always reads in chunks, with `stream_results=True` so it also streams on PostgreSQL/MySQL. Peak is now ~740 MB; output unchanged (same SHA-256)
 - [x] **Training data stored as Parquet.** Done 2026-10-24/25: `prepare` writes `data/training_data.parquet` (~1/16 the size of the CSV, loads ~2x faster); values identical to the old CSV. Parquet exposed that `heat_index` was always empty (as `object`), so it's now dropped from the features (50 columns). Retrained models differ slightly from the old ones (mean diff 0.2–0.8 AQI), most likely because `colsample_bytree` < 1 samples features by column position
-- [ ] Delete the old `data/training_data.csv` once happy with the Parquet version
+- [x] Delete the old `data/training_data.csv` (done 2026-10-25)
 - [ ] `heat_index` is never populated: IQAir doesn't send the `"hi"` field (`parser.py:75`). Decide whether to keep collecting it or remove it from the models/DB
 - [ ] Make rolling features time-based (`.rolling("6h", on="pollutant_timestamp")`) rather than counting rows, because there are gaps between hourly readings
-- [ ] Weather trend features are NaN in prediction mode: `we_df` is filtered to the target times, so the horizon-0 rows from 6 and 24 hours earlier aren't available
+- [x] **Weather-trend features fixed.** Done 2026-10-26: trends are now looked up in the full weather data (`we_full`, current-conditions rows) in both modes. Prediction: 88/88 NaN → 0; training: ~17% NaN → 2–4%. Retrained
 - [ ] Log the training column list with each model in MLflow (`mlflow.log_dict`) and load it in `Predictor`, instead of the shared `config/training_columns.json`
 - [x] Remove the debug `print`s from `features.py` and `predictor.py`, and the hard-coded `as_of` in `Predictor.predict()`
