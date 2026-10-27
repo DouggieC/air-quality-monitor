@@ -3,7 +3,19 @@
 ## Bigger projects
 
 - [ ] **Website to present the predictions.** Details TBA
-- [ ] **Finish the infrastructure: k8s / AWS / IaC.** Details TBA. There's existing work in `k8s/` and `docker/`, and on the remote branches `k8s-dev-pi` and `k8s-docker-dev`
+- [ ] **Finish the infrastructure: k8s / AWS / IaC.** Existing work in `docker/` and `k8s/` (collector + PostgreSQL), written before predict/train existed. Plan: hourly job = collect then predict; monthly job = prepare then train
+  - [x] Image: keep `CMD` generic and give each CronJob its own command (`args: ["collect"]` etc.)
+  - [x] Rate-limit tracking: done 2026-10-27. Logs calls charged (header after first request minus after last) against requests made, so double-charging shows up in a single run; `rate_limit.json` dropped
+  - [ ] Notifications: catastrophic failures + a per-run summary of cities with no data, in a way that makes it easy to change the notification method later; plus a heartbeat (e.g. healthchecks.io) for runs that never happen
+  - [x] Add a `.dockerignore`: allowlist of `src/`, `config/`, `pyproject.toml`, `requirements.txt`; build context now 251 kB
+  - [ ] Shrink the image (1.56 GB, of which 345 MB is NVIDIA GPU libraries pulled in by XGBoost). Options: drop XGBoost from production requirements (predictor uses LightGBM), use `xgboost-cpu`, or separate images for collect/predict vs training. Matters most on a Pi
+  - [ ] Memory/CPU requests and limits on the CronJobs (essential for training)
+  - [ ] Add `mlflow` and `pyarrow` to `requirements.txt` for predict/train
+  - [ ] Decide where models live (MLflow server in the cluster vs `.joblib` on a shared volume/S3); one or two containers for collect + predict
+  - [ ] Python version: check what production uses before changing the image (currently 3.12; dev venv is 3.14)
+  - [ ] Near the end: migrate the existing SQLite history into the cluster's PostgreSQL (check `scripts/db_migration.py` still matches the tables)
+  - [ ] Database volume is 1 GiB; SQLite is already 145 MB after ~7 months, so size it for growth
+  - [ ] Then IaC
 
 ## Production data fixes
 
@@ -26,6 +38,8 @@
   - Likely causes (my guess): connection errors, or hitting the monthly IQAir API call limit. Check the production logs and the rate-limit record (`data/rate_limit.json`) around those times
 
 ## Feature engineering / prediction
+
+- [ ] **Unit tests out of date:** 7 tests error because `MockStorage.read()` in `tests/conftest.py` doesn't accept the new `time_filter_col`/`start`/`end` arguments (added 2026-10-24). Update the mock (and check `test_trainer.py::test_load_data`, which may still expect CSV)
 
 - [x] **Filter by time when predicting, to cut memory use.** Done 2026-10-24: `read()` takes an optional `time_filter_col`/`start`/`end` (DB: `.where()` in the query; CSV: chunked read). `build()` passes the windows in prediction mode. Prediction peak memory fell from >2 GB (killed) to ~430 MB; training output unchanged (same row count and SHA-256)
 - [x] **Cut `prepare` memory.** Done 2026-10-24: the peak (1.9 GB) was temporary Python objects inside `pd.read_sql`, not the DataFrame (172 MB). `DBStorage.read()` now always reads in chunks, with `stream_results=True` so it also streams on PostgreSQL/MySQL. Peak is now ~740 MB; output unchanged (same SHA-256)

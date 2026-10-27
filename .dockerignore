@@ -1,0 +1,9 @@
+# Default exclude everything
+*
+
+# Only include necessary stuff
+!src/
+!config/
+!pyproject.toml
+!requirements.txt
+**/__pycache__

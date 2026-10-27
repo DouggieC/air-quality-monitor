@@ -31,23 +31,6 @@ def _get_feature_storage():
     return aqi_storage, we_storage
 
 
-def _load_rate_limit():
-    path = Path(Config.DATA_DIR / "rate_limit.json")
-    if path.exists():
-        with open(path, "r") as f:
-            return json.load(f)
-    return None
-
-
-def _save_rate_limit(before, after):
-    path = Path(Config.DATA_DIR / "rate_limit.json")
-    with open(path, "w") as f:
-        json.dump(
-            {"before": before, "after": {"remaining": after, "timestamp": datetime.now(UTC).isoformat()}},
-            f,
-            indent=2,
-        )
-
 def _parse_as_of(as_of_str: str) -> datetime:
     try:
         as_of = datetime.fromisoformat(as_of_str)
@@ -112,9 +95,6 @@ def run_data_collection():
     hourly_csv_storage, hourly_db_storage = sf.get_storage(HourlyForecast)
     daily_csv_storage, daily_db_storage = sf.get_storage(DailyForecast)
 
-    # Get the previous rate limit
-    rate_limits = _load_rate_limit()
-
     # All set up. Let's run the data collection pipeline!
     runner = DataCollector(
         aqc,
@@ -134,18 +114,15 @@ def run_data_collection():
     runner.run(cities)
 
     # Log and save rate limit usage
-    current_remaining = aqc.rate_limit_remaining
-    previous = None
-    if rate_limits and current_remaining:
-        previous_val = rate_limits.get("after", {}).get("remaining")
-        if previous_val:
-            previous = int(previous_val)
-            used = previous - int(current_remaining)
-            logger.info(f"IQAir API calls used this run: {used}.")
-    logger.info(f"Remaining IQAir API calls: {current_remaining}.")
-    _save_rate_limit(previous, current_remaining)
+    if aqc.rate_limit_remaining is not None and aqc.initial_limit_remaining is not None:
+        charged = aqc.initial_limit_remaining - aqc.rate_limit_remaining
+        num_requests = aqc.request_count - 1
+        logger.info(f"IQAir API charged {charged} calls for {num_requests} requests (excluding the first). "
+                    f"{aqc.rate_limit_remaining} calls remaining")
+    else:
+        logger.warning("IQAir API failed to return X-RateLimit-Remaining header.")
 
-
+    
 def run_feature_engineering():
     logger = logging.getLogger(__name__)
     logger.debug("Executing method")
@@ -249,7 +226,7 @@ def main():
 
     # Parse command line arguments
     arg_parser = argparse.ArgumentParser(description="Air Quality Monitor")
-    subparsers = arg_parser.add_subparsers(dest="command")
+    subparsers = arg_parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("collect")
     subparsers.add_parser("prepare")
     

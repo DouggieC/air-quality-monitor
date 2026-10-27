@@ -16,6 +16,8 @@ spec:
             - name: aqm-collector
               image: aqm-collector:local
               imagePullPolicy: IfNotPresent
+              args:
+                - collect
               envFrom:
                 - configMapRef:
                     name: aqm-collector-config

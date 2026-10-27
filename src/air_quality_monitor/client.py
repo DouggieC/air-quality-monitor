@@ -15,6 +15,8 @@ class AirQualityClient:
         self.base_url = base_url
         self.request_timeout = request_timeout
         self.rate_limit_remaining = None
+        self.initial_limit_remaining = None
+        self.request_count = 0
 
     def get_all_countries(self):
         # Gets list of all countries with available data
@@ -94,7 +96,13 @@ class AirQualityClient:
         response = requests.get(url, params=params, timeout=self.request_timeout)
         if response.history:
             self.logger.info(f"Redirects: {[r.url for r in response.history]}")
-        self.rate_limit_remaining = response.headers.get("X-RateLimit-Remaining")
+
+        remaining = response.headers.get("X-RateLimit-Remaining")
+        remaining = int(remaining) if remaining else None
+        self.rate_limit_remaining = remaining
+        if self.initial_limit_remaining is None:
+            self.initial_limit_remaining = remaining
+        self.request_count += 1
 
         data = response.json()
         self.logger.debug(f"Data received:\t{data}")

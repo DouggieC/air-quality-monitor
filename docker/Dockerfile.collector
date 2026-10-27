@@ -18,4 +18,4 @@ RUN mkdir -p /app/data \
 
 USER appuser
 
-CMD ["python", "-m", "air_quality_monitor.main"]
+ENTRYPOINT ["python", "-m", "air_quality_monitor.main"]
