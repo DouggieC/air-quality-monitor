@@ -185,27 +185,25 @@ class FeatureEngineer:
         # aqi_rolling_std_6h: Std deviation over the last 6 hours
         # aqi_rolling_mean_24h: Mean AQI over the last 24 hours
         aqi_df = aqi_df.sort_values(["city", "pollutant_timestamp"])
-        aqi_df["aqi_rolling_mean_6h"] = (
-            aqi_df.groupby("city")["aqi"].rolling(6).mean().reset_index(0, drop=True)
+        aqi_rolling_mean_6h = (
+            aqi_df.groupby("city").rolling("6h", min_periods=3, on="pollutant_timestamp")["aqi"].mean()
         )
-        aqi_df["aqi_rolling_std_6h"] = (
-            aqi_df.groupby("city")["aqi"].rolling(6).std().reset_index(0, drop=True)
+        aqi_rolling_std_6h = (
+            aqi_df.groupby("city").rolling("6h", min_periods=3, on="pollutant_timestamp")["aqi"].std()
         )
-        aqi_df["aqi_rolling_mean_24h"] = (
-            aqi_df.groupby("city")["aqi"].rolling(24).mean().reset_index(0, drop=True)
+        aqi_rolling_mean_24h = (
+            aqi_df.groupby("city").rolling("24h", min_periods=12, on="pollutant_timestamp")["aqi"].mean()
         )
 
         # Merge into joined df
-        aqi_lookup = aqi_df[
-            [
-                "city",
-                "pollutant_timestamp",
-                "aqi_rolling_mean_6h",
-                "aqi_rolling_std_6h",
-                "aqi_rolling_mean_24h",
-            ]
-        ]
-
+        aqi_lookup = pd.DataFrame(
+            {
+                "aqi_rolling_mean_6h": aqi_rolling_mean_6h,
+                "aqi_rolling_std_6h": aqi_rolling_std_6h,
+                "aqi_rolling_mean_24h": aqi_rolling_mean_24h
+            }
+        ).reset_index()
+        
         aqi_lookup = aqi_lookup.rename(columns={"pollutant_timestamp": "_pt_rolling"})
 
         df = df.merge(

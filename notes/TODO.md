@@ -31,8 +31,8 @@
 - [x] **Cut `prepare` memory.** Done 2026-10-24: the peak (1.9 GB) was temporary Python objects inside `pd.read_sql`, not the DataFrame (172 MB). `DBStorage.read()` now always reads in chunks, with `stream_results=True` so it also streams on PostgreSQL/MySQL. Peak is now ~740 MB; output unchanged (same SHA-256)
 - [x] **Training data stored as Parquet.** Done 2026-10-24/25: `prepare` writes `data/training_data.parquet` (~1/16 the size of the CSV, loads ~2x faster); values identical to the old CSV. Parquet exposed that `heat_index` was always empty (as `object`), so it's now dropped from the features (50 columns). Retrained models differ slightly from the old ones (mean diff 0.2–0.8 AQI), most likely because `colsample_bytree` < 1 samples features by column position
 - [x] Delete the old `data/training_data.csv` (done 2026-10-25)
-- [ ] `heat_index` is never populated: IQAir doesn't send the `"hi"` field (`parser.py:75`). Decide whether to keep collecting it or remove it from the models/DB
-- [ ] Make rolling features time-based (`.rolling("6h", on="pollutant_timestamp")`) rather than counting rows, because there are gaps between hourly readings
+- [x] ~~`heat_index` is never populated~~ Won't fix (2026-10-27): already dropped from the features; the empty column in the DB/CSVs is harmless
+- [x] **Rolling features are time-based.** Done 2026-10-27: 6h and 24h time windows per city (`min_periods` 3 and 12) instead of row counts. Checked against a by-hand calculation for all 11 cities. Metrics essentially unchanged (within run-to-run noise); the benefit is that the features now mean what their names say
 - [x] **Weather-trend features fixed.** Done 2026-10-26: trends are now looked up in the full weather data (`we_full`, current-conditions rows) in both modes. Prediction: 88/88 NaN → 0; training: ~17% NaN → 2–4%. Retrained
 - [ ] Log the training column list with each model in MLflow (`mlflow.log_dict`) and load it in `Predictor`, instead of the shared `config/training_columns.json`
 - [x] Remove the debug `print`s from `features.py` and `predictor.py`, and the hard-coded `as_of` in `Predictor.predict()`
