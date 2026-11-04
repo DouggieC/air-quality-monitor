@@ -5,5 +5,5 @@ pandas
 sqlalchemy
 psycopg2-binary
 lightgbm
-xgboost
+xgboost-cpu
 scikit-learn

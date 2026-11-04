@@ -8,7 +8,7 @@
   - [x] Rate-limit tracking: done 2026-10-27. Logs calls charged (header after first request minus after last) against requests made, so double-charging shows up in a single run; `rate_limit.json` dropped
   - [ ] Notifications: catastrophic failures + a per-run summary of cities with no data, in a way that makes it easy to change the notification method later; plus a heartbeat (e.g. healthchecks.io) for runs that never happen
   - [x] Add a `.dockerignore`: allowlist of `src/`, `config/`, `pyproject.toml`, `requirements.txt`; build context now 251 kB
-  - [ ] Shrink the image (1.56 GB, of which 345 MB is NVIDIA GPU libraries pulled in by XGBoost). Options: drop XGBoost from production requirements (predictor uses LightGBM), use `xgboost-cpu`, or separate images for collect/predict vs training. Matters most on a Pi
+  - [x] Shrink the image: `xgboost` → `xgboost-cpu` (2026-10-29), 1.56 GB → 774 MB. Remaining options if needed: `mlflow-skinny` when adding MLflow; separate images for collect/predict vs training
   - [ ] Memory/CPU requests and limits on the CronJobs (essential for training)
   - [ ] Add `mlflow` and `pyarrow` to `requirements.txt` for predict/train
   - [ ] Decide where models live (MLflow server in the cluster vs `.joblib` on a shared volume/S3); one or two containers for collect + predict
