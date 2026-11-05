@@ -2,7 +2,6 @@ import json
 import logging
 from datetime import UTC, datetime
 
-# import mlflow
 from .config import Config
 from .features import FeatureEngineer
 from .models import Prediction
