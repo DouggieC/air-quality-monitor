@@ -7,7 +7,6 @@ from pathlib import Path
 
 import joblib
 import jsonlines
-import mlflow
 import pandas as pd
 from lightgbm import LGBMRegressor
 from scipy.stats import loguniform, randint, uniform
@@ -15,6 +14,9 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from xgboost import XGBRegressor
 
 from .config import Config
+
+if not Config.IS_PRODUCTION:
+    import mlflow
 
 
 class Trainer:
@@ -44,7 +46,8 @@ class Trainer:
             model_params = json.load(f)
 
         # Set up MLflow tracing
-        mlflow.set_experiment("AQI Prediction")
+        if not Config.IS_PRODUCTION:
+            mlflow.set_experiment("AQI Prediction")
 
         for range_name, horizons in horizon_ranges.items():
             mask_train = X_train["horizon"].isin(horizons)
@@ -101,7 +104,8 @@ class Trainer:
         }
 
         # Set up MLflow tracing
-        mlflow.set_experiment("Model Tuning")
+        if not Config.IS_PRODUCTION:
+            mlflow.set_experiment("Model Tuning")
 
         # Define hyperparameter ranges
         param_dist = {
@@ -338,19 +342,21 @@ class Trainer:
             link_path.symlink_to(model_file.name)
 
         # MLflow
-        self._log_to_mlflow(
-            metrics,
-            hyperparams,
-            data_params,
-            model if include_model else None,
-            run_name if include_model else None,
-            Config.MODELS_DIR / filename if include_model else None,
-        )
+        if not Config.IS_PRODUCTION:
+            self._log_to_mlflow(
+                metrics,
+                hyperparams,
+                data_params,
+                model if include_model else None,
+                run_name if include_model else None,
+                Config.MODELS_DIR / filename if include_model else None,
+            )
 
         # JSON
         self.logger.info(f"Saving experiment details for {run_name} range horizon")
         self._log_experiment(run_name, timestamp, hyperparams, metrics)
 
-        mlflow.end_run()
+        if not Config.IS_PRODUCTION:
+            mlflow.end_run()
 
         return metrics
