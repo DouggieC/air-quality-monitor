@@ -315,7 +315,8 @@ class Trainer:
         self.logger.debug("Executing method")
 
         # Start MLflow
-        mlflow.start_run(run_name=run_name)
+        if not Config.IS_PRODUCTION:
+            mlflow.start_run(run_name=run_name)
 
         # Train the model
         self.logger.info(f"Training {run_name}")
