@@ -2,8 +2,7 @@ import json
 import logging
 from datetime import UTC, datetime
 
-import mlflow
-
+# import mlflow
 from .config import Config
 from .features import FeatureEngineer
 from .models import Prediction
@@ -14,11 +13,25 @@ class Predictor:
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug("Creating object")
         self.feature_engineer = feature_engineer
-        self.models = {
-            "short": mlflow.pyfunc.load_model("models:/lightgbm_short/latest"),
-            "medium": mlflow.pyfunc.load_model("models:/lightgbm_medium/latest"),
-            "long": mlflow.pyfunc.load_model("models:/lightgbm_long/latest"),
-        }
+
+        if Config.IS_PRODUCTION:
+            # Load from models/ via joblib
+            import joblib
+
+            self.models = {
+                "short": joblib.load(Config.MODELS_DIR / "lightgbm_short_latest.joblib"),
+                "medium": joblib.load(Config.MODELS_DIR / "lightgbm_medium_latest.joblib"),
+                "long": joblib.load(Config.MODELS_DIR / "lightgbm_long_latest.joblib"),
+            }
+        else:
+            # Load from MLFlow
+            import mlflow
+
+            self.models = {
+                "short": mlflow.pyfunc.load_model("models:/lightgbm_short/latest"),
+                "medium": mlflow.pyfunc.load_model("models:/lightgbm_medium/latest"),
+                "long": mlflow.pyfunc.load_model("models:/lightgbm_long/latest"),
+            }
 
         self.horizon_to_range = {
             0: "short",
@@ -38,7 +51,7 @@ class Predictor:
         self.logger.debug(f"Total feature rows: {len(features_df)}")
         self.logger.debug(f"Rows per city:\n{features_df['city'].value_counts()}")
         self.logger.debug(f"Unique city/horizon combos: {len(features_df.groupby(['city', 'horizon']))}")
-        self.logger.debug(f"Missing values in AQI features: {features_df.filter(like="aqi_").isna().sum()}")
+        self.logger.debug(f"Missing values in AQI features: {features_df.filter(like='aqi_').isna().sum()}")
 
         predictions = []
 
@@ -53,7 +66,9 @@ class Predictor:
 
             # Don't fail if we have missing data, just log it and move on to the next batch
             if batch.empty:
-                self.logger.warning(f"No features rows for {range_name} range (horizons: {horizons}); skipping")
+                self.logger.warning(
+                    f"No features rows for {range_name} range (horizons: {horizons}); skipping"
+                )
                 continue
 
             # Batch predict
@@ -69,7 +84,7 @@ class Predictor:
                     "forecast_for",
                 ],
             )
-            
+
             # Load the columns list used for training
             with open(Config.CONFIG_DIR / "training_columns.json", "r") as f:
                 training_columns = json.load(f)
