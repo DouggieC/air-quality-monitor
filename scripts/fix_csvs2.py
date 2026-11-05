@@ -3,7 +3,7 @@ from pathlib import Path
 
 print("Fixing CSVs")
 
-DATA_DIR = "/workspaces/air-quality-monitor/data"
+DATA_DIR = "/home/doug/apps/air-quality-monitor/data"
 AQI_IN_FILE = Path(DATA_DIR) / "aqi_history.csv"
 AQI_OUT_FILE = Path(DATA_DIR) / "aqi_history.new"
 WE_IN_FILE = Path(DATA_DIR) / "hourly_forecast.csv"

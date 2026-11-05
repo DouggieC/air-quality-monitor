@@ -26,5 +26,5 @@ TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 $PYTHON -m air_quality_monitor.main collect >> ${LOG_DIR}/cron_run_${$}.log 2>&1
 
 # Send notifications
-MSG=$(grep -E "ERROR | API calls" ${LOG_DIR}/cron_run_${$}.log)
+MSG=$(grep -E "ERROR | WARNING | IQAir API" ${LOG_DIR}/cron_run_${$}.log)
 curl -sd "${MSG}" https://ntfy.sh/air-quality-monitor-1975
