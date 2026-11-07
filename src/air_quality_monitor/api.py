@@ -1,6 +1,7 @@
 import json
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from .config import Config
 from .models import City, Prediction
@@ -18,6 +19,11 @@ pred_storage = _get_storage()
 
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:8080"],
+    allow_methods=["GET"],
+)
 
 @app.get("/cities")
 def get_cities():

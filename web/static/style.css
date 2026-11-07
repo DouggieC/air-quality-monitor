@@ -1,0 +1,37 @@
+#predictions {
+    width: 400px;
+}
+
+.prediction-box {
+    display: inline-block;
+    width: 100px;
+    height: 100px;
+    padding: 10px;
+    margin: 5px;
+    border: 1px solid black;
+}
+
+.aqi-good {
+    background-color: #00e400;
+}
+
+.aqi-moderate {
+    background-color: #ffff00;
+}
+
+.aqi-unhealthy-sg {
+    background-color: #ff7e00;
+}
+
+.aqi-unhealthy {
+    background-color: #ff0000;
+}
+
+.aqi-v-unhealthy {
+    background-color: #8f3f97;
+}
+
+.aqi-hazardous {
+    background-color: #7e0023;
+}
+
