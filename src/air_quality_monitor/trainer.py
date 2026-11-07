@@ -49,6 +49,8 @@ class Trainer:
         if not Config.IS_PRODUCTION:
             mlflow.set_experiment("AQI Prediction")
 
+        metrics_output = {}
+
         for range_name, horizons in horizon_ranges.items():
             mask_train = X_train["horizon"].isin(horizons)
             mask_test = X_test["horizon"].isin(horizons)
@@ -77,6 +79,8 @@ class Trainer:
                     data_params,
                 )
 
+                metrics_output[name] = {"rmse": round(metrics["rmse"], 1)}
+
                 self.logger.info(f"Metrics for {name}")
                 self.logger.info(f"RMSE:\t{metrics['rmse']}")
                 self.logger.info(f"MAE:\t{metrics['mae']}")
@@ -84,6 +88,9 @@ class Trainer:
                 self.logger.info(f"Predictions within 5 AQI points of actual:\t{metrics['within_5']}")
                 self.logger.info(f"Predictions within 10 AQI points of actual:\t{metrics['within_10']}")
                 self.logger.info(f"Predictions within 20 AQI points of actual:\t{metrics['within_20']}")
+
+        with open(Config.CONFIG_DIR / "model_metrics.json", "w") as f:
+            json.dump(metrics_output, f, indent=2)
 
     def tune(self):
         self.logger.debug("Executing Method")
@@ -328,7 +335,7 @@ class Trainer:
         metrics = self._calculate_metrics(y_test, y_pred)
 
         # Save artifact
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  # noqa: DTZ005
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         if include_model:
             self.logger.info(f"Saving {run_name} model")
             filename = f"{run_name}_{timestamp}.joblib"
