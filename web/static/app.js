@@ -37,7 +37,7 @@ async function loadPredictions(city) {
 
     const date = new Date(predictions[0].collected_at);
     const timeStr = date.toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'});
-    const dateStr = date.toLocaleDateString('en-GB', {day: 'numeric', month: 'long', year: 'numeric'});
+    const dateStr = date.toLocaleDateString('en-GB', {weekday: 'short', day: 'numeric', month: 'long', year: 'numeric'});
 
     const status = document.getElementById('status');
     status.textContent = `Predictions at ${timeStr} on ${dateStr}`
@@ -53,16 +53,34 @@ async function loadPredictions(city) {
 
         console.log(prediction.horizon, prediction.predicted_aqi)
 
+        const forecastDate = new Date(prediction.forecast_for);
+        let forecastStr = ''
+        if ([2, 4, 8, 12].includes(prediction.horizon)) {
+            forecastStr = date.toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'});
+        } else {
+            forecastStr = date.toLocaleDateString('en-GB', {weekday: 'short'})
+        }
+
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'forecast-time';
+        timeSpan.textContent = forecastStr;
+
+        const aqiLine = document.createElement('span');
+        aqiLine.className = 'aqi-line';
+
         const aqiSpan = document.createElement('span');
         aqiSpan.className = 'aqi-value';
-        aqiSpan.textContent = `${prediction.horizon}h: ${prediction.predicted_aqi}`;
+        aqiSpan.textContent = prediction.predicted_aqi;
 
         const rmseSpan = document.createElement('span');
         rmseSpan.className = 'rmse-value';
         rmseSpan.textContent = '\u00B1' + rmse;
 
-        box.appendChild(aqiSpan);
-        box.appendChild(rmseSpan);
+        aqiLine.appendChild(aqiSpan);
+        aqiLine.appendChild(rmseSpan);
+
+        box.appendChild(timeSpan);
+        box.appendChild(aqiLine);
 
         if (prediction.predicted_aqi <= 50) {
             box.className = 'prediction-box aqi-good';

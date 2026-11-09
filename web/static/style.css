@@ -40,6 +40,7 @@ label[for="city-select"] {
 }
 
 .prediction-box {
+    position: relative;
     display: inline-flex;
     flex-direction: column;
     justify-content: center;
@@ -51,6 +52,18 @@ label[for="city-select"] {
     border: 1px solid #999;
     border-radius: 15px;
     text-align: center;
+}
+
+.prediction-box .forecast-time {
+    position: absolute;
+    top: 10px;
+    font-weight: bold;
+}
+
+.prediction-box .aqi-line {
+    display: flex;
+    align-items: center;
+    gap: 0.3em;
 }
 
 .prediction-box .aqi-value {
