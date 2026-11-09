@@ -56,9 +56,9 @@ async function loadPredictions(city) {
         const forecastDate = new Date(prediction.forecast_for);
         let forecastStr = ''
         if ([2, 4, 8, 12].includes(prediction.horizon)) {
-            forecastStr = date.toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'});
+            forecastStr = forecastDate.toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'});
         } else {
-            forecastStr = date.toLocaleDateString('en-GB', {weekday: 'short'})
+            forecastStr = forecastDate.toLocaleDateString('en-GB', {weekday: 'short'})
         }
 
         const timeSpan = document.createElement('span');
