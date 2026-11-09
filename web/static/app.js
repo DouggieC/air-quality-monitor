@@ -1,3 +1,15 @@
+const horizonToModel = {
+    2: 'lightgbm_short',
+    4: 'lightgbm_medium',
+    8: 'lightgbm_medium',
+    12: 'lightgbm_medium',
+    24: 'lightgbm_long',
+    48: 'lightgbm_long',
+    
+}
+
+let metrics = {};
+
 async function loadCities() {
     const response = await fetch(`${CONFIG.API_BASE_URL}/cities`);
     const data = await response.json();
@@ -13,18 +25,44 @@ async function loadCities() {
     });
 }
 
+async function loadMetrics() {
+    const response = await fetch(`${CONFIG.API_BASE_URL}/metrics`);
+    metrics = await response.json();
+}
+
 async function loadPredictions(city) {
     const response = await fetch(`${CONFIG.API_BASE_URL}/predictions/${city}`);
     const predictions = await response.json();
     console.log(predictions);
+
+    const date = new Date(predictions[0].collected_at);
+    const timeStr = date.toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'});
+    const dateStr = date.toLocaleDateString('en-GB', {day: 'numeric', month: 'long', year: 'numeric'});
+
+    const status = document.getElementById('status');
+    status.textContent = `Predictions at ${timeStr} on ${dateStr}`
 
     const predictionsDiv = document.getElementById('predictions');
     predictionsDiv.innerHTML = '';
 
     predictions.forEach(prediction => {
         const box = document.createElement('div');
+
+        const model = horizonToModel[prediction.horizon];
+        const rmse = Math.round(metrics[model].rmse)
+
         console.log(prediction.horizon, prediction.predicted_aqi)
-        box.textContent = `${prediction.horizon}h:\t${prediction.predicted_aqi}`
+
+        const aqiSpan = document.createElement('span');
+        aqiSpan.className = 'aqi-value';
+        aqiSpan.textContent = `${prediction.horizon}h: ${prediction.predicted_aqi}`;
+
+        const rmseSpan = document.createElement('span');
+        rmseSpan.className = 'rmse-value';
+        rmseSpan.textContent = '\u00B1' + rmse;
+
+        box.appendChild(aqiSpan);
+        box.appendChild(rmseSpan);
 
         if (prediction.predicted_aqi <= 50) {
             box.className = 'prediction-box aqi-good';
@@ -45,7 +83,11 @@ async function loadPredictions(city) {
 }
 
 // Run on page load
-document.addEventListener('DOMContentLoaded', loadCities);
+document.addEventListener('DOMContentLoaded', async () => {
+    loadCities();
+    await loadMetrics();
+    console.log(metrics);
+});
 
 // When city is selected
 document.getElementById('city-select').addEventListener('change', (event) => {

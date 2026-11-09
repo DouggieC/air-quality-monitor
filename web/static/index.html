@@ -1,13 +1,53 @@
 <head>
-    <title>Air Quality Prediction at HH:MM</title>
-    <link rel="stylesheet" href="style.css"></link>
+    <meta charset="UTF-8">
+    <title>Air Quality Prediction</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/alvaromontoro/almond.css@latest/dist/almond.min.css" />
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Air Quality Prediction</h1>
-    <select id="city-select">
-        <option value="">Loading cities...</option>
-    </select>
-    <div id="predictions">Select a city to see predictions</div>
+    <div class="container">
+        <h1>Air Quality Prediction</h1>
+
+        <label for="city-select">Select a city:</label>
+        <select id="city-select">
+            <option value="">Loading cities...</option>
+        </select>
+
+        <div class="main-content">
+            <div class="predictions-section">
+                <div id="predictions"></div>
+                <p id="status"></p>
+            </div>
+
+            <aside class="legend">
+                <h4>AQI Scale</h4>
+                <div class="legend-item">
+                    <span class="legend-color aqi-good"></span>
+                    <span class="legend-label">Good<br><small>0–50</small></span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color aqi-moderate"></span>
+                    <span class="legend-label">Moderate<br><small>51–100</small></span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color aqi-unhealthy-sg"></span>
+                    <span class="legend-label">Sensitive<br><small>101–150</small></span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color aqi-unhealthy"></span>
+                    <span class="legend-label">Unhealthy<br><small>151–200</small></span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color aqi-v-unhealthy"></span>
+                    <span class="legend-label">Very Unhealthy<br><small>201–300</small></span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color aqi-hazardous"></span>
+                    <span class="legend-label">Hazardous<br><small>301+</small></span>
+                </div>
+            </aside>
+        </div>
+    </div>
 
     <script src="config.js"></script>
     <script src="app.js"></script>
