@@ -36,14 +36,18 @@ $PYTHON -m air_quality_monitor.main training \
 if grep -qE "ERROR | WARNING" ${LOG_DIR}/$0_$$.log; then
     if grep -q "ERROR" ${LOG_DIR}/$0_$$.log; then
         MSG="ERROR in training:\n$(grep -E "ERROR | WARNING" ${LOG_DIR}/$0_$$.log)"
+        PRIORITY="high"
     elif grep -q "WARNING" ${LOG_DIR}/$0_$$.log; then
         MSG="WARNING in training:\n$(grep -E "ERROR | WARNING" ${LOG_DIR}/$0_$$.log)"
+        PRIORITY="default"
     else
         MSG="Training completed successfully:\n$(grep 'Training complete:' ${LOG_DIR}/$0_$$.log)"
+        PRIORITY="low"
     fi
 else
     MSG="Training completed but no completion message found. Better check the result!"
+    PRIORITY="default"
 fi
 
-curl -sd "${MSG}" https://ntfy.sh/air-quality-monitor-1975
+curl -sd "${MSG}" -H "Priority: ${PRIORITY}" https://ntfy.sh/air-quality-monitor-1975
 

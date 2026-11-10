@@ -27,13 +27,17 @@ $PYTHON -m air_quality_monitor.main predict >> ${LOG_DIR}/$0_$$.log 2>&1
 if grep -qE "ERROR | WARNING | IQAir API" ${LOG_DIR}/$0_$$.log; then
     if grep -q "ERROR" ${LOG_DIR}/$0_$$.log; then
         MSG="ERROR in collection/prediction:\n$(grep -E "ERROR | WARNING | IQAir API" ${LOG_DIR}/$0_$$.log)"
+        PRIORITY="high"
     elif grep -q "WARNING" ${LOG_DIR}/$0_$$.log; then
         MSG="WARNING in collection/prediction:\n$(grep -E "WARNING | IQAir API" ${LOG_DIR}/$0_$$.log)"
+        PRIORITY="default"
     else
         MSG="Collection/prediction completed successfully:\n$(grep -E "IQAir API" ${LOG_DIR}/$0_$$.log)"
+        PRIORITY="low"
     fi
 else
     MSG="Collection/prediction completed but no completion message found. Better check the result!"
+    PRIORITY="default"
 fi
     
-curl -sd "${MSG}" https://ntfy.sh/air-quality-monitor-1975
+curl -sd "${MSG}" -H "Priority: ${PRIORITY}" https://ntfy.sh/air-quality-monitor-1975
