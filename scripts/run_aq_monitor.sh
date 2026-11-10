@@ -11,7 +11,7 @@ source ${APP_DIR}/.env
 set +a
 
 LOG_DIR="/home/doug/cron/log"
-LOCKFILE="/tmp/air_quality_monitor.lock"
+LOCKFILE="/tmp/$0.lock"
 
 cd $APP_DIR || exit 1
 
@@ -19,13 +19,10 @@ cd $APP_DIR || exit 1
 exec 200> $LOCKFILE
 flock -n 200 || exit 1
 
-# Timestamped logfiles
-TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-
 # Execute the job
-$PYTHON -m air_quality_monitor.main collect >> ${LOG_DIR}/cron_run_$$.log 2>&1
-$PYTHON -m air_quality_monitor.main predict >> ${LOG_DIR}/cron_run_$$.log 2>&1
+$PYTHON -m air_quality_monitor.main collect >> ${LOG_DIR}/$0_$$.log 2>&1
+$PYTHON -m air_quality_monitor.main predict >> ${LOG_DIR}/$0_$$.log 2>&1
 
 # Send notifications
-MSG=$(grep -E "ERROR | WARNING | IQAir API" ${LOG_DIR}/cron_run_$$.log)
+MSG=$(grep -E "ERROR | WARNING | IQAir API" ${LOG_DIR}/$0_$$.log)
 curl -sd "${MSG}" https://ntfy.sh/air-quality-monitor-1975
