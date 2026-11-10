@@ -4,7 +4,7 @@ const horizonToModel = {
     8: 'lightgbm_medium',
     12: 'lightgbm_medium',
     24: 'lightgbm_long',
-    48: 'lightgbm_long',
+    47: 'lightgbm_long',
     
 }
 
