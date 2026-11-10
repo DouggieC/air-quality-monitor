@@ -151,6 +151,11 @@ class FeatureEngineer:
 
         # Rename for neatness
         joined_df = joined_df.rename(columns={"collected_at_we": "collected_at"})
+
+        self.logger.info(
+            f"Feature engineering complete: {len(joined_df)} rows for {joined_df['city'].nunique()} cities"
+        )
+
         return joined_df
 
     def _create_lag_features(self, df: pd.DataFrame, aqi_df: pd.DataFrame) -> pd.DataFrame:

@@ -106,4 +106,9 @@ class Predictor:
                 )
                 predictions.append(prediction)
 
+        horizons_generated = sorted({p.horizon for p in predictions})
+        self.logger.info(
+            f"Prediction complete: {len(predictions)} predictions, horizons {horizons_generated}"
+        )
+
         return predictions

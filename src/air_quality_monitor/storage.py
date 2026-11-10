@@ -24,13 +24,17 @@ class BaseStorage(ABC):
         pass
 
     @abstractmethod
-    def read(self, time_filter_col: str | None = None, start: datetime | None = None, end: datetime | None = None) -> pd.DataFrame:
+    def read(
+        self, time_filter_col: str | None = None, start: datetime | None = None, end: datetime | None = None
+    ) -> pd.DataFrame:
         pass
 
     def _validate_filters(self, time_filter_col, start, end) -> None:
         if time_filter_col:
             if not start and not end:
-                raise ValueError(f"At least one of start and end date must be specified for {time_filter_col}")
+                raise ValueError(
+                    f"At least one of start and end date must be specified for {time_filter_col}"
+                )
             if start and not isinstance(start, datetime):
                 raise TypeError("Start date must be a valid datetime object")
             if end and not isinstance(end, datetime):
@@ -38,7 +42,6 @@ class BaseStorage(ABC):
         else:
             if start or end:
                 raise ValueError("Start and/or end date specified, but no filter column given")
-
 
 
 class FileStorage(BaseStorage):
@@ -56,7 +59,6 @@ class FileStorage(BaseStorage):
         self.logger.debug(f"Datetime columns: {dates}")
         return dates
 
-                
 
 class CSVStorage(FileStorage):
     # A class to handle CSV file storage
@@ -83,14 +85,16 @@ class CSVStorage(FileStorage):
         except Exception as e:  # noqa: BLE001
             self.logger.error(f"Error while saving to file: {e}")
 
-    def read(self, time_filter_col: str | None = None, start: datetime | None = None, end: datetime | None = None) -> pd.DataFrame:
+    def read(
+        self, time_filter_col: str | None = None, start: datetime | None = None, end: datetime | None = None
+    ) -> pd.DataFrame:
         # Read the specified CSV file into a dataframe
         self.logger.debug("Executing method")
         self.logger.info(f"Reading CSV file {self.filepath}")
 
         # Do we have a date filter supplied?
         self._validate_filters(time_filter_col=time_filter_col, start=start, end=end)
-        
+
         if not self.filepath.exists():
             self.logger.error(f"File not found: {self.filepath}")
             raise FileNotFoundError(f"File not found: {self.filepath}")
@@ -100,10 +104,14 @@ class CSVStorage(FileStorage):
                 df = pd.read_csv(self.filepath, parse_dates=self._get_datetime_cols())
             else:
                 chunks = []
-                with pd.read_csv(self.filepath, parse_dates=self._get_datetime_cols(), chunksize=100000) as reader:
+                with pd.read_csv(
+                    self.filepath, parse_dates=self._get_datetime_cols(), chunksize=100000
+                ) as reader:
                     for chunk in reader:
                         # Ensure we have a UTC-aware datetime:
-                        chunk[time_filter_col] = pd.to_datetime(chunk[time_filter_col], utc=True, format="ISO8601")
+                        chunk[time_filter_col] = pd.to_datetime(
+                            chunk[time_filter_col], utc=True, format="ISO8601"
+                        )
 
                         # Filter
                         if start:
@@ -172,7 +180,7 @@ class JSONStorage(FileStorage):
     def save(self, reading: Reading) -> None:
 
         self.logger.debug("Executing method")
-        self.logger.info("Saving raw data to JSON")
+        self.logger.debug("Saving raw data to JSON")
         self.logger.debug(f"Data to be saved: {reading}")
         self.logger.debug(f"Saving to {self.filepath}")
 
@@ -184,7 +192,9 @@ class JSONStorage(FileStorage):
         except Exception as e:
             self.logger.error(f"Error while saving to file: {e}")
 
-    def read(self, time_filter_col: str | None = None, start: datetime | None = None, end: datetime | None = None) -> list[str]:  # list[AirQualityReading]:
+    def read(
+        self, time_filter_col: str | None = None, start: datetime | None = None, end: datetime | None = None
+    ) -> list[str]:  # list[AirQualityReading]:
         # Implement JSON fetching logic here
         pass
 
@@ -194,8 +204,6 @@ class DBStorage(BaseStorage):
 
     def __init__(self, engine: Engine, model_class):
         super().__init__()
-        # self.logger = logging.getLogger(self.__class__.__name__)
-        # self.logger.debug("Creating object")
 
         self.engine = engine
         self.model_class = model_class
@@ -243,13 +251,15 @@ class DBStorage(BaseStorage):
             self.logger.error(f"Error saving to database: {e}")
             raise
 
-    def read(self, time_filter_col: str | None = None, start: datetime | None = None, end: datetime | None = None) -> pd.DataFrame:
+    def read(
+        self, time_filter_col: str | None = None, start: datetime | None = None, end: datetime | None = None
+    ) -> pd.DataFrame:
         self.logger.debug("Executing method")
         self.logger.info("Reading from DB")
 
         # Do we have a date filter supplied?
         self._validate_filters(time_filter_col=time_filter_col, start=start, end=end)
-        
+
         try:
             query = select(
                 self.model_class,
@@ -314,6 +324,8 @@ class ParquetStorage(FileStorage):
     def save(self, reading: Reading, base_filename: Path):
         raise NotImplementedError(self.not_implemented_msg)
 
-    def read(self, time_filter_col: str | None = None, start: datetime | None = None, end: datetime | None = None) -> list[Reading]:
+    def read(
+        self, time_filter_col: str | None = None, start: datetime | None = None, end: datetime | None = None
+    ) -> list[Reading]:
         # Implement Parquet fetching logic here
         raise NotImplementedError(self.not_implemented_msg)

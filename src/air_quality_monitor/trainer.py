@@ -92,6 +92,8 @@ class Trainer:
         with open(Config.CONFIG_DIR / "model_metrics.json", "w") as f:
             json.dump(metrics_output, f, indent=2)
 
+        self.logger.info(f"Training complete: {len(self.models)} models trained and saved")
+
     def tune(self):
         self.logger.debug("Executing Method")
 

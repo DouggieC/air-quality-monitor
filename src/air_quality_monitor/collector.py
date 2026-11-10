@@ -47,6 +47,9 @@ class DataCollector:
 
         # Can only make 5 IQAir API calls/min. Count when 5 have been made
         call_count = 0
+        aqi_saved = 0
+        hourly_saved = 0
+        daily_saved = 0
 
         for city in cities:
             call_count += 1
@@ -76,7 +79,7 @@ class DataCollector:
                 if self.aq_db_storage:
                     self.aq_db_storage.save(parsed_aq_data, city)
 
-                # sleep(60)
+                aqi_saved += 1
 
             except APIError as e:
                 self.logger.error(f"Error fetching air quality data for {city.city}: {e}")
@@ -94,6 +97,7 @@ class DataCollector:
 
                 # Parse the hourly data ready for storage
                 parsed_hourly_forecasts = self.hourly_parser.parse(raw_we_data, city)
+                hourly_saved += len(parsed_hourly_forecasts)
 
                 for forecast in parsed_hourly_forecasts:
                     # Write to the CSV file if in use
@@ -106,6 +110,7 @@ class DataCollector:
 
                 # Parse the hourly data ready for storage
                 parsed_daily_forecasts = self.daily_parser.parse(raw_we_data, city)
+                daily_saved += len(parsed_daily_forecasts)
 
                 for forecast in parsed_daily_forecasts:
                     # Write to the CSV file if in use
@@ -122,3 +127,7 @@ class DataCollector:
                 self.logger.error(f"Error parsing weather data for {city.city}: {e}")
             except StorageError as e:
                 self.logger.error(f"Error saving weather data for {city.city}: {e}")
+
+        self.logger.info(
+            f"Collector finished: {aqi_saved} AQI, {hourly_saved} hourly & {daily_saved} daily weather readings"
+        )

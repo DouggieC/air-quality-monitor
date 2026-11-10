@@ -24,7 +24,8 @@ DATE_DESC=$(date +"%b %Y")
 VERSION=$(date +"%Y%m")
 
 # Execute the job
-$PYTHON -m air_quality_monitor.main prepare && cp -p data/training_data.parquet data/training_data_${VERSION}.parquet
+$PYTHON -m air_quality_monitor.main prepare >> ${LOG_DIR}/$0_$$.log 2>&1 && 
+    cp -p data/training_data.parquet data/training_data_${VERSION}.parquet
 $PYTHON -m air_quality_monitor.main training \
     --data-version ${VERSION} \
     --data-filename data/training_data_${VERSION}.parquet \
@@ -32,6 +33,17 @@ $PYTHON -m air_quality_monitor.main training \
     >> ${LOG_DIR}/$0_$$.log 2>&1
 
 # Send notifications
-MSG=$(grep -E "ERROR | WARNING" ${LOG_DIR}/$0_$$.log)
+if grep -qE "ERROR | WARNING" ${LOG_DIR}/$0_$$.log; then
+    if grep -q "ERROR" ${LOG_DIR}/$0_$$.log; then
+        MSG="ERROR in training:\n$(grep -E "ERROR | WARNING" ${LOG_DIR}/$0_$$.log)"
+    elif grep -q "WARNING" ${LOG_DIR}/$0_$$.log; then
+        MSG="WARNING in training:\n$(grep -E "ERROR | WARNING" ${LOG_DIR}/$0_$$.log)"
+    else
+        MSG="Training completed successfully:\n$(grep 'Training complete:' ${LOG_DIR}/$0_$$.log)"
+    fi
+else
+    MSG="Training completed but no completion message found. Better check the result!"
+fi
+
 curl -sd "${MSG}" https://ntfy.sh/air-quality-monitor-1975
 

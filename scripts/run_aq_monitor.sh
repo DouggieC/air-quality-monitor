@@ -24,5 +24,16 @@ $PYTHON -m air_quality_monitor.main collect >> ${LOG_DIR}/$0_$$.log 2>&1
 $PYTHON -m air_quality_monitor.main predict >> ${LOG_DIR}/$0_$$.log 2>&1
 
 # Send notifications
-MSG=$(grep -E "ERROR | WARNING | IQAir API" ${LOG_DIR}/$0_$$.log)
+if grep -qE "ERROR | WARNING | IQAir API" ${LOG_DIR}/$0_$$.log; then
+    if grep -q "ERROR" ${LOG_DIR}/$0_$$.log; then
+        MSG="ERROR in collection/prediction:\n$(grep -E "ERROR | WARNING | IQAir API" ${LOG_DIR}/$0_$$.log)"
+    elif grep -q "WARNING" ${LOG_DIR}/$0_$$.log; then
+        MSG="WARNING in collection/prediction:\n$(grep -E "WARNING | IQAir API" ${LOG_DIR}/$0_$$.log)"
+    else
+        MSG="Collection/prediction completed successfully:\n$(grep -E "IQAir API" ${LOG_DIR}/$0_$$.log)"
+    fi
+else
+    MSG="Collection/prediction completed but no completion message found. Better check the result!"
+fi
+    
 curl -sd "${MSG}" https://ntfy.sh/air-quality-monitor-1975

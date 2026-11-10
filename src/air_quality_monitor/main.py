@@ -35,8 +35,8 @@ def _parse_as_of(as_of_str: str) -> datetime:
     try:
         as_of = datetime.fromisoformat(as_of_str)
     except ValueError:
-        raise argparse.ArgumentTypeError("Date must be a valid ISO string (e.g. 2026-10-22T17:00)") from None 
-    
+        raise argparse.ArgumentTypeError("Date must be a valid ISO string (e.g. 2026-10-22T17:00)") from None
+
     if as_of.tzinfo is None:
         as_of = as_of.replace(tzinfo=UTC)
     else:
@@ -44,22 +44,21 @@ def _parse_as_of(as_of_str: str) -> datetime:
 
     return as_of
 
+
 def _mask_keys(key: str | None) -> str:
     if not key:
         return "Key missing"
-    
+
     if len(key) <= 6:
         # Key is very short. Mask the whole thing
         masked_key = "*" * len(key)
         return masked_key
-    
+
     last_chars = key[-6:]
     star_count = len(key) - 6
     stars = "*" * star_count
     masked_key = stars + last_chars
     return masked_key
-
-
 
 
 def run_data_collection():
@@ -117,12 +116,14 @@ def run_data_collection():
     if aqc.rate_limit_remaining is not None and aqc.initial_limit_remaining is not None:
         charged = aqc.initial_limit_remaining - aqc.rate_limit_remaining
         num_requests = aqc.request_count - 1
-        logger.info(f"IQAir API charged {charged} calls for {num_requests} requests (excluding the first). "
-                    f"{aqc.rate_limit_remaining} calls remaining")
+        logger.info(
+            f"IQAir API charged {charged} calls for {num_requests} requests (excluding the first). "
+            f"{aqc.rate_limit_remaining} calls remaining"
+        )
     else:
         logger.warning("IQAir API failed to return X-RateLimit-Remaining header.")
 
-    
+
 def run_feature_engineering():
     logger = logging.getLogger(__name__)
     logger.debug("Executing method")
@@ -160,7 +161,7 @@ def run_prediction(as_of):
     if as_of is not None:
         logger.info("Test run - skipping save")
         return
-    
+
     sf = StorageFactory(Config)
     pred_csv_storage, pred_db_storage = sf.get_storage(Prediction)
     for storage in [pred_csv_storage, pred_db_storage]:
@@ -179,6 +180,8 @@ def run_prediction(as_of):
                     storage.save(prediction, city)
                 else:
                     storage.save(prediction)
+
+    logger.info(f"Prediction complete: {len(predictions)} predictions saved")
 
 
 def run_training(data_version: int, data_filename: str, data_description: str):
@@ -229,7 +232,7 @@ def main():
     subparsers = arg_parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("collect")
     subparsers.add_parser("prepare")
-    
+
     train_parser = subparsers.add_parser("train")
     train_parser.add_argument("--data-version", required=True)
     train_parser.add_argument("--data-filename", required=True)
@@ -246,7 +249,7 @@ def main():
     args = arg_parser.parse_args()
 
     # Error if giving an as_of date to prediction in prod
-    if Config.IS_PRODUCTION and args.command == 'predict' and args.as_of is not None:
+    if Config.IS_PRODUCTION and args.command == "predict" and args.as_of is not None:
         arg_parser.error("Cannot provide as_of date in production")
 
     match args.command:
