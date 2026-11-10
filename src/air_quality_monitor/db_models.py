@@ -1,3 +1,10 @@
+"""
+SQLAlchemy ORM models for database persistence.
+
+Maps domain models to database tables. All reading tables reference
+the City table via foreign key for normalized storage.
+"""
+
 from datetime import datetime
 
 from sqlalchemy import DateTime, Float, ForeignKey, Integer, String
@@ -5,10 +12,12 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class Base(DeclarativeBase):
+    """SQLAlchemy declarative base for all ORM models."""
     pass
 
 
 class DBCity(Base):
+    """City reference table with location metadata."""
     __tablename__ = "city"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -21,6 +30,7 @@ class DBCity(Base):
 
 
 class DBAirQualityReading(Base):
+    """Historical AQI readings from IQAir."""
     __tablename__ = "air_quality_reading"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -39,6 +49,7 @@ class DBAirQualityReading(Base):
 
 
 class DBWeatherReading(Base):
+    """Current weather observations from OpenWeatherMap (not currently used)."""
     __tablename__ = "weather_reading"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -65,6 +76,7 @@ class DBWeatherReading(Base):
 
 
 class DBHourlyForecast(Base):
+    """Hourly weather forecasts from OpenWeatherMap."""
     __tablename__ = "hourly_forecast"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -90,6 +102,7 @@ class DBHourlyForecast(Base):
 
 
 class DBDailyForecast(Base):
+    """Daily weather forecasts from OpenWeatherMap."""
     __tablename__ = "daily_forecast"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -124,6 +137,7 @@ class DBDailyForecast(Base):
 
 
 class DBPrediction(Base):
+    """Model-generated AQI predictions."""
     __tablename__ = "prediction"
 
     id: Mapped[int] = mapped_column(primary_key=True)

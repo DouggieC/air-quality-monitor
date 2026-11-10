@@ -1,11 +1,16 @@
-# Sets up centralised logging for the whole app
+"""
+Centralized logging configuration.
+
+Configures root logger with stdout and optional file handlers.
+Log level and file output controlled via environment variables.
+"""
+
 import logging
 from pathlib import Path
 
 
 def setup_logging(log_level: str, log_dir: Path, log_to_file: bool) -> None:
-    # Main logger configuration
-    # Always log to stdout
+    """Configure application-wide logging with console and optional file output."""
     handlers = [logging.StreamHandler()]
 
     # If LOG_TO_FILE is 'true' or unset, log to file as well

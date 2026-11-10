@@ -1,3 +1,10 @@
+"""
+Data collection pipeline for AQI and weather data.
+
+Orchestrates the fetch-parse-store cycle for each configured city,
+handling rate limiting, errors, and storage to multiple backends.
+"""
+
 import logging
 from time import sleep
 
@@ -9,6 +16,11 @@ from .storage import JSONStorage
 
 
 class DataCollector:
+    """Coordinates data collection from IQAir and OpenWeatherMap APIs.
+
+    Fetches raw data, stores JSON archives, parses responses, and saves
+    structured data to CSV and/or database storage backends.
+    """
     def __init__(
         self,
         aqc: AirQualityClient,
@@ -42,7 +54,7 @@ class DataCollector:
         self.daily_db_storage = daily_db_storage
 
     def run(self, cities: list[City]) -> None:
-        # For each city, fetch data, store raw JSON, parse and store structured data as CSV and/or DB
+        """Execute collection for all cities, respecting API rate limits."""
         self.logger.debug("Executing method")
 
         # Can only make 5 IQAir API calls/min. Count when 5 have been made

@@ -1,9 +1,17 @@
+"""
+Domain models for AQI and weather data.
+
+Dataclass definitions for readings, forecasts, predictions, and cities.
+Used for type-safe data transfer between API clients, parsers, and storage.
+"""
+
 from dataclasses import dataclass
 from datetime import datetime
 
 
 @dataclass
 class Reading:
+    """Base class for all timestamped readings with location data."""
     city: str
     state: str
     country: str
@@ -15,7 +23,7 @@ class Reading:
 
 @dataclass
 class AirQualityReading(Reading):
-    # A dataclass to represent a single air quality reading with all relevant fields
+    """AQI reading from IQAir with pollutant and basic weather data."""
     aqi: int  # AQI based on US EPA standard
     main_pollutant: str  # Main pollutant contributing to the AQI
     pollutant_timestamp: datetime  # Timestamp of the pollutant measurement
@@ -30,7 +38,7 @@ class AirQualityReading(Reading):
 
 @dataclass
 class WeatherReading(Reading):
-    # A dataclass to represent a single weather reading
+    """Current weather observation from OpenWeatherMap."""
     dt: datetime  # Observation time (UTC timestamp)
     sunrise: datetime  # Sunrise time (UTC timestamp)
     sunset: datetime  # Sunset time (UTC timestamp)
@@ -53,7 +61,7 @@ class WeatherReading(Reading):
 
 @dataclass
 class WeatherAlert(Reading):
-    # A dataclass to represent a severe weather alert
+    """Severe weather alert from OpenWeatherMap (not currently used)."""
     sender_name: str  # Alert source. See https://openweathermap.org/api/one-call-3?collection=one_call_api_3.0#listsource
     event: str  # Alert event name
     start: datetime  # Start date & time (UTC timestamp)
@@ -64,13 +72,13 @@ class WeatherAlert(Reading):
 
 @dataclass
 class Forecast(Reading):
-    # A base dataclass to represent an individual weather forecast
+    """Base class for forecast data with target timestamp."""
     forecast_for: datetime  # Timestamp when the forecast is for
 
 
 @dataclass
 class HourlyForecast(Forecast):
-    # A dataclass to represent an individual hourly weather forecast for a specific date/time
+    """Hourly weather forecast (48 hours) from OpenWeatherMap."""
     temperature: float  # Temperature (C; default is K but API calls request metric)
     feels_like: float  # Perceived temperature (C)
     pressure: int  # Atmospheric pressure at MSL, hPa
@@ -91,7 +99,7 @@ class HourlyForecast(Forecast):
 
 @dataclass
 class DailyForecast(Forecast):
-    # A dataclass to represent an individual daily weather forecast for a specific date
+    """Daily weather forecast (8 days) from OpenWeatherMap."""
     sunrise: datetime  # Sunrise time (UTC timestamp)
     sunset: datetime  # Sunset time (UTC timestamp)
     temp_morn: float  # Morning temperature (C; default is K but API calls request metric)
@@ -121,7 +129,7 @@ class DailyForecast(Forecast):
 
 @dataclass
 class City:
-    # A dataclass to represent a city with its name and location details
+    """City configuration with location and timezone for data collection."""
     city: str
     state: str
     country: str
@@ -132,7 +140,7 @@ class City:
 
 @dataclass
 class Prediction(Reading):
-    # A dataclass to represent a prediction for air quality or weather
+    """Model-generated AQI prediction for a specific horizon."""
     forecast_for: datetime  # Timestamp when the prediction is for
     predicted_aqi: int  # Predicted AQI
     model_name: str  # Name of the model used (e.g. "lightgbm_short")

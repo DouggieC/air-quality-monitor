@@ -1,3 +1,10 @@
+"""
+Factory for creating storage backends.
+
+Maps domain model classes to appropriate CSV filenames and database
+ORM models. Lazily initializes database connection when needed.
+"""
+
 import logging
 
 from .database import Database
@@ -7,6 +14,7 @@ from .storage import CSVStorage, DBStorage
 
 
 class StorageFactory:
+    """Creates CSV and/or DB storage instances based on configuration."""
     def __init__(self, config):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug("Creating object")
@@ -30,6 +38,7 @@ class StorageFactory:
         return self._db
 
     def get_storage(self, model_class):
+        """Return (csv_storage, db_storage) tuple for the given model class."""
         self.logger.debug("Executing method")
 
         if model_class not in self.registry:

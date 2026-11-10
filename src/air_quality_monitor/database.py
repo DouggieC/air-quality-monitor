@@ -1,3 +1,10 @@
+"""
+Database connection and schema management.
+
+Wraps SQLAlchemy engine creation and provides methods for
+initializing tables and syncing city reference data.
+"""
+
 import logging
 
 from sqlalchemy import create_engine
@@ -8,6 +15,7 @@ from .models import City
 
 
 class Database:
+    """Manages database connection and schema initialization."""
     def __init__(self, db_url: str):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug("Creating object")
@@ -28,8 +36,8 @@ class Database:
         Base.metadata.create_all(engine)
         return engine
 
-    # def sync_cities(self, engine, cities: list[City]):
     def sync_cities(self, cities: list[City]):
+        """Ensure all configured cities exist in the city reference table."""
         self.logger.debug("Executing method")
 
         with Session(self.engine) as session:

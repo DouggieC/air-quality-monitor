@@ -1,3 +1,10 @@
+"""
+API clients for external data sources.
+
+Provides typed interfaces to IQAir (AQI data) and OpenWeatherMap
+(weather forecasts) APIs with error handling and rate limit tracking.
+"""
+
 import logging
 
 import requests
@@ -7,7 +14,10 @@ from .models import City
 
 
 class AirQualityClient:
-    # A client class to interact with the IQAir Air Quality API
+    """Client for IQAir Air Quality API.
+
+    Tracks rate limit usage via X-RateLimit-Remaining header.
+    """
     def __init__(self, api_key, base_url, request_timeout):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug("Creating object")
@@ -113,7 +123,10 @@ class AirQualityClient:
 
 
 class WeatherClient:
-    # A client to interact with the OpenWeatherMap API
+    """Client for OpenWeatherMap One Call API.
+
+    Provides geocoding and weather/forecast data retrieval.
+    """
     def __init__(self, api_key, owm_oc_base_url, owm_geo_base_url, request_timeout):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug("Creating object")

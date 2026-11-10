@@ -1,3 +1,10 @@
+"""
+AQI prediction using trained models.
+
+Loads LightGBM models and generates predictions for multiple forecast
+horizons (0-47 hours) using current AQI and weather feature data.
+"""
+
 import json
 import logging
 from datetime import UTC, datetime
@@ -8,6 +15,11 @@ from .models import Prediction
 
 
 class Predictor:
+    """Generates AQI predictions using trained models.
+
+    Loads models from joblib (production) or MLflow (development) and
+    applies them to feature data built by FeatureEngineer.
+    """
     def __init__(self, feature_engineer: FeatureEngineer):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug("Creating object")
@@ -44,6 +56,7 @@ class Predictor:
         }
 
     def predict(self, as_of: datetime | None = None) -> list[Prediction]:
+        """Generate predictions for all cities at all forecast horizons."""
         self.logger.debug("Executing method")
         as_of = datetime.now(UTC) if as_of is None else as_of
         features_df = self.feature_engineer.build(as_of=as_of, include_metadata=True)

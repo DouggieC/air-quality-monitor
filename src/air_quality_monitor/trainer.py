@@ -1,3 +1,14 @@
+"""
+Model training and hyperparameter tuning for AQI prediction.
+
+Trains LightGBM and XGBoost regressors for three forecast ranges:
+- Short-term (0-2 hours)
+- Medium-term (4-12 hours)
+- Long-term (24-47 hours)
+
+Logs experiments to MLflow (dev) and saves models as joblib files (prod).
+"""
+
 import hashlib
 import json
 import logging
@@ -20,6 +31,13 @@ if not Config.IS_PRODUCTION:
 
 
 class Trainer:
+    """Trains and tunes ML models for AQI prediction.
+
+    Attributes:
+        data_version: Version identifier for the training dataset (e.g., "202611").
+        data_filename: Path to the parquet file containing training data.
+        data_description: Human-readable description of the training run.
+    """
     def __init__(self, data_version: int, data_filename: str, data_description: str):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug("Creating object")
@@ -29,6 +47,16 @@ class Trainer:
         self.data_description = data_description
 
     def train(self):
+        """Train all models using hyperparameters from config/model_params.json.
+
+        Trains LightGBM and XGBoost models for each horizon range, evaluates on
+        test set, saves models to disk, and logs metrics to MLflow.
+
+        Outputs:
+            - Models saved to models/{name}_latest.joblib
+            - Metrics saved to config/model_metrics.json
+            - Experiments logged to log/experiments.jsonl
+        """
         self.logger.debug("Executing Method")
 
         self.logger.debug("Loading training data")
@@ -95,6 +123,12 @@ class Trainer:
         self.logger.info(f"Training complete: {len(metrics_output)} models trained and saved")
 
     def tune(self):
+        """Perform random search hyperparameter tuning.
+
+        Runs 100 random iterations per model/range combination, evaluating on
+        a validation set. Best models are then retrained on train+val and
+        evaluated on the held-out test set.
+        """
         self.logger.debug("Executing Method")
 
         self.logger.debug("Loading training data")
@@ -210,6 +244,16 @@ class Trainer:
                 )
 
     def _load_data(self, include_validation=False):
+        """Load and split training data from parquet file.
+
+        Args:
+            include_validation: If True, split 60/20/20 (train/val/test).
+                               If False, split 70/30 (train/test).
+
+        Returns:
+            Tuple of (X_train, y_train, X_val, y_val, X_test, y_test, data_params).
+            X_val and y_val are None when include_validation=False.
+        """
         self.logger.debug("Executing method")
         self.logger.debug("Reading data")
         df = pd.read_parquet(self.data_path)
@@ -273,6 +317,11 @@ class Trainer:
             writer.write(record)
 
     def _calculate_metrics(self, y_true, y_pred) -> dict:
+        """Calculate regression metrics.
+
+        Returns dict with: rmse, mae, r2, within_5, within_10, within_20.
+        The 'within_N' metrics show percentage of predictions within N AQI points.
+        """
         self.logger.debug("Executing method")
 
         metrics = {
@@ -321,6 +370,20 @@ class Trainer:
         data_params=None,
         include_model=True,
     ) -> dict:
+        """Train a model and log results to MLflow and experiments.jsonl.
+
+        Args:
+            model: Scikit-learn compatible regressor.
+            X_train, y_train: Training features and target.
+            X_test, y_test: Test features and target.
+            run_name: Identifier for this run (e.g., "lightgbm_short").
+            hyperparams: Dict of hyperparameters used.
+            data_params: Optional dict of dataset metadata for MLflow.
+            include_model: If True, save model artifact and register with MLflow.
+
+        Returns:
+            Dict of metrics (rmse, mae, r2, within_5, within_10, within_20).
+        """
         self.logger.debug("Executing method")
 
         # Start MLflow

@@ -1,3 +1,10 @@
+"""
+Application configuration from environment variables.
+
+Loads settings from .env file including API credentials, directory paths,
+storage options, and runtime flags (production vs development).
+"""
+
 import json
 import os
 from pathlib import Path
@@ -8,6 +15,7 @@ from .models import City
 
 
 class Config:
+    """Central configuration with environment-based settings."""
     load_dotenv()  # Load environment variables from .env file
 
     # IQAir credentials & URLs
@@ -59,16 +67,16 @@ class Config:
         DB_NAME = os.getenv("DB_NAME")
 
     @classmethod
-    # Load the list of required cities
     def load_cities(cls) -> list[City]:
+        """Load city configurations from JSON file."""
         with open(cls.CITY_LIST) as f:
             data = json.load(f)
 
         return [City(**item) for item in data]
 
     @classmethod
-    # Construct a DB connection URL
     def get_db_url(cls) -> str:
+        """Build database connection URL from config settings."""
         if cls.DB_TYPE == "sqlite":
             return f"sqlite:///{cls.DATA_DIR}/{cls.DB_NAME}.db"
         else:

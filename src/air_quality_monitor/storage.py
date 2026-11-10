@@ -1,3 +1,10 @@
+"""
+Data storage abstraction layer.
+
+Provides unified interface for reading/writing data to CSV, JSON, or database.
+All storage classes support optional time-based filtering for efficient queries.
+"""
+
 import csv
 import logging
 from abc import ABC, abstractmethod
@@ -15,6 +22,11 @@ from .models import City, Reading
 
 
 class BaseStorage(ABC):
+    """Abstract base class for all storage backends.
+
+    Subclasses must implement save() and read() methods.
+    """
+
     def __init__(self):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug("Creating object")
@@ -45,6 +57,8 @@ class BaseStorage(ABC):
 
 
 class FileStorage(BaseStorage):
+    """Base class for file-based storage (CSV, JSON, Parquet)."""
+
     def __init__(self, filepath: Path, model_class):
         super().__init__()
 
@@ -61,7 +75,10 @@ class FileStorage(BaseStorage):
 
 
 class CSVStorage(FileStorage):
-    # A class to handle CSV file storage
+    """CSV file storage with append-mode writes and chunked reads.
+
+    Supports time-based filtering during read to avoid loading entire file.
+    """
 
     def __init__(self, filepath: Path, model_class):
         super().__init__(filepath, model_class)
@@ -138,7 +155,10 @@ class CSVStorage(FileStorage):
 
 
 class JSONStorage(FileStorage):
-    # A class to handle JSON file storage
+    """JSONL (JSON Lines) storage for raw API responses.
+
+    Each record is written as a single line for append-friendly logging.
+    """
 
     def __init__(self, filepath: Path, model_class):
         super().__init__(filepath, model_class)
@@ -200,7 +220,11 @@ class JSONStorage(FileStorage):
 
 
 class DBStorage(BaseStorage):
-    # A class to handle database storage
+    """SQLAlchemy-based database storage.
+
+    Automatically joins with City table to include location metadata.
+    Uses streaming/chunked reads for memory efficiency.
+    """
 
     def __init__(self, engine: Engine, model_class):
         super().__init__()
@@ -309,8 +333,7 @@ class DBStorage(BaseStorage):
 
 
 class ParquetStorage(FileStorage):
-    # A class to handle Parquet file storage
-    # NOT YET IMPLEMENTED
+    """Parquet file storage (not yet implemented)."""
 
     def __init__(self, filepath: Path, model_class):
         super().__init__(filepath, model_class)

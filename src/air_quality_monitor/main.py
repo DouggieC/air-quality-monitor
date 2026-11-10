@@ -1,3 +1,14 @@
+"""
+CLI entry point for the air quality monitor.
+
+Commands:
+    collect  - Fetch AQI and weather data from APIs
+    prepare  - Run feature engineering on historical data
+    train    - Train models on prepared features
+    tune     - Hyperparameter tuning with random search
+    predict  - Generate AQI predictions
+"""
+
 import argparse
 import json
 import logging
@@ -32,6 +43,7 @@ def _get_feature_storage():
 
 
 def _parse_as_of(as_of_str: str) -> datetime:
+    """Parse ISO datetime string to UTC-aware datetime."""
     try:
         as_of = datetime.fromisoformat(as_of_str)
     except ValueError:
@@ -46,6 +58,7 @@ def _parse_as_of(as_of_str: str) -> datetime:
 
 
 def _mask_keys(key: str | None) -> str:
+    """Mask API keys for safe logging (shows last 6 chars only)."""
     if not key:
         return "Key missing"
 
@@ -62,7 +75,11 @@ def _mask_keys(key: str | None) -> str:
 
 
 def run_data_collection():
+    """Collect AQI and weather data for all configured cities.
 
+    Fetches from IQAir (AQI) and OpenWeatherMap (weather) APIs,
+    stores raw JSON for archival and parsed data to CSV/DB.
+    """
     logger = logging.getLogger(__name__)
     logger.debug("Executing method")
 
@@ -125,6 +142,12 @@ def run_data_collection():
 
 
 def run_feature_engineering():
+    """Build training features from historical data.
+
+    Outputs:
+        - data/training_data.parquet
+        - config/training_columns.json
+    """
     logger = logging.getLogger(__name__)
     logger.debug("Executing method")
 
@@ -143,6 +166,12 @@ def run_feature_engineering():
 
 
 def run_prediction(as_of):
+    """Generate AQI predictions for all cities.
+
+    Args:
+        as_of: Reference time for prediction. None means current time
+               (production mode). Set to a past time for backtesting.
+    """
     from .predictor import Predictor
 
     logger = logging.getLogger(__name__)
@@ -185,6 +214,7 @@ def run_prediction(as_of):
 
 
 def run_training(data_version: int, data_filename: str, data_description: str):
+    """Train all models using the specified dataset."""
     from .trainer import Trainer
 
     logger = logging.getLogger(__name__)
@@ -195,6 +225,7 @@ def run_training(data_version: int, data_filename: str, data_description: str):
 
 
 def run_tuning(data_version: int, data_filename: str, data_description: str):
+    """Run hyperparameter tuning on the specified dataset."""
     from .trainer import Trainer
 
     logger = logging.getLogger(__name__)

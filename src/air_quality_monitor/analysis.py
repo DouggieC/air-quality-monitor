@@ -1,3 +1,10 @@
+"""
+Data analysis and visualization utilities.
+
+Provides filtering and plotting methods for exploring historical
+AQI and weather data. Used for ad-hoc analysis, not production.
+"""
+
 from __future__ import annotations
 
 import logging
@@ -81,6 +88,7 @@ class Analyser(ABC):
 
 
 class AirQualityAnalyser(Analyser):
+    """Analyser for IQAir AQI data with local timezone conversion."""
     timestamp_col = "pollutant_timestamp"
 
     def get_aqi_by_date_range(self, start_date=None, end_date=None) -> pd.DataFrame:
@@ -112,6 +120,7 @@ class AirQualityAnalyser(Analyser):
 
 
 class WeatherAnalyser(Analyser):
+    """Analyser for OpenWeatherMap weather data (not fully implemented)."""
     timestamp_col = "dt"
 
     def get_weather_by_date_range(self, start_date=None, end_date=None) -> pd.DataFrame:

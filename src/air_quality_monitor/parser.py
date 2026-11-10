@@ -1,3 +1,11 @@
+"""
+API response parsers for AQI and weather data.
+
+Converts raw JSON responses from IQAir and OpenWeatherMap APIs into
+typed dataclass models. Handles timestamp parsing and data extraction
+from nested response structures.
+"""
+
 import logging
 from datetime import datetime, timezone
 
@@ -6,6 +14,7 @@ from .models import AirQualityReading, City, DailyForecast, HourlyForecast, Weat
 
 
 class ResponseParser:
+    """Base parser with shared timestamp handling logic."""
     def __init__(self):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug("Creating object")
@@ -48,7 +57,10 @@ class ResponseParser:
 
 
 class AirQualityParser(ResponseParser):
+    """Parses IQAir API responses into AirQualityReading objects."""
+
     def parse(self, raw_data: dict, city: City) -> AirQualityReading:
+        """Extract AQI, pollutant, and weather data from IQAir response."""
         self.logger.debug("Executing method")
         self.logger.debug(f"Raw data received:\t{raw_data}")
 
@@ -81,7 +93,10 @@ class AirQualityParser(ResponseParser):
 
 
 class WeatherParser(ResponseParser):
+    """Parses OWM current weather responses (not currently used)."""
+
     def parse(self, raw_data: dict, city: City) -> WeatherReading:
+        """Extract current weather conditions from OWM response."""
         self.logger.debug("Executing method")
         self.logger.debug(f"Raw data received:\t{raw_data}")
 
@@ -122,7 +137,10 @@ class WeatherParser(ResponseParser):
         return wr
 
 class HourlyForecastParser(ResponseParser):
+    """Parses OWM hourly forecast array into HourlyForecast objects."""
+
     def parse(self, raw_data: dict, city: City) -> list[HourlyForecast]:
+        """Extract 48-hour forecast data from OWM response."""
         self.logger.debug("Executing method")
         self.logger.debug(f"Raw data received:\t{raw_data}")
 
@@ -167,7 +185,10 @@ class HourlyForecastParser(ResponseParser):
         return hours
 
 class DailyForecastParser(ResponseParser):
+    """Parses OWM daily forecast array into DailyForecast objects."""
+
     def parse(self, raw_data: dict, city: City) -> list[DailyForecast]:
+        """Extract 8-day forecast data from OWM response."""
         self.logger.debug("Executing method")
         self.logger.debug(f"Raw data received:\t{raw_data}")
 

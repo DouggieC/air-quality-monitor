@@ -1,3 +1,13 @@
+"""
+Feature engineering for AQI prediction models.
+
+Combines AQI readings with weather forecasts and creates derived features:
+- Lag features (AQI at t-1h, t-2h, ..., t-48h)
+- Rolling statistics (6h and 24h means/std)
+- Temporal features (hour, day_of_week, month)
+- Weather trends (temperature/pressure/humidity changes)
+"""
+
 import logging
 from datetime import datetime
 
@@ -7,6 +17,11 @@ from .storage import BaseStorage
 
 
 class FeatureEngineer:
+    """Builds feature matrices from AQI and weather data.
+
+    Used for both training (full historical data) and prediction
+    (recent data filtered by as_of timestamp).
+    """
     def __init__(self, aqi_storage: BaseStorage, weather_storage: BaseStorage):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug("Creating object")
@@ -14,6 +29,19 @@ class FeatureEngineer:
         self.weather_storage = weather_storage
 
     def build(self, as_of: datetime | None = None, include_metadata: bool = False) -> pd.DataFrame:
+        """Build feature matrix from AQI and weather data.
+
+        Args:
+            as_of: Reference timestamp for prediction. If None, builds training
+                   data from all available history. If set, filters to recent
+                   data and creates rows for each prediction horizon.
+            include_metadata: If True, retain city/location columns for prediction
+                             output. If False, drop them for training.
+
+        Returns:
+            DataFrame with features. Includes 'aqi' column for training,
+            excludes it for prediction (as_of is set).
+        """
         self.logger.debug("Executing method")
 
         if as_of is not None:
@@ -159,7 +187,7 @@ class FeatureEngineer:
         return joined_df
 
     def _create_lag_features(self, df: pd.DataFrame, aqi_df: pd.DataFrame) -> pd.DataFrame:
-        """Assumes df is sorted by city and pollutant_timestamp"""
+        """Add historical AQI values as features (aqi_lag_1h, aqi_lag_2h, etc.)."""
         self.logger.debug("Executing method")
 
         # Keep only columns needed for lookup
@@ -189,6 +217,7 @@ class FeatureEngineer:
         return df
 
     def _create_rolling_features(self, df: pd.DataFrame, aqi_df: pd.DataFrame) -> pd.DataFrame:
+        """Add rolling statistics (6h/24h mean and std of AQI)."""
         self.logger.debug("Executing method")
 
         # Sort, group by city and create rolling features
@@ -230,7 +259,7 @@ class FeatureEngineer:
         return df
 
     def _create_temporal_features(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Assumes df is sorted by city"""
+        """Add time-based features: horizon, hour, day_of_week, month."""
         self.logger.debug("Executing method")
 
         df["horizon"] = (df["forecast_for"] - df["ref_time"]) / pd.Timedelta(hours=1)
@@ -241,7 +270,7 @@ class FeatureEngineer:
         return df
 
     def _encode_categoricals(self, df: pd.DataFrame, include_metadata: bool = False) -> pd.DataFrame:
-        """Performs one-hot encoding of categorical variables"""
+        """One-hot encode city and main_pollutant columns."""
         self.logger.debug("Executing method")
 
         if include_metadata:
@@ -258,6 +287,7 @@ class FeatureEngineer:
         return df
 
     def _create_weather_trends(self, df: pd.DataFrame, we_df: pd.DataFrame) -> pd.DataFrame:
+        """Add weather change features (temp_change_24h, pressure_change_6h, etc.)."""
         self.logger.debug("Executing method")
 
         current = we_df[we_df["forecast_for"] == we_df["collected_at"]][

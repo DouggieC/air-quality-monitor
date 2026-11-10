@@ -1,18 +1,26 @@
+"""
+Custom exception hierarchy for the application.
+
+Provides specific exception types for API, storage, and parsing errors
+to enable targeted error handling in the data collection pipeline.
+"""
+
+
 class ApplicationError(Exception):
-    # Base class for application errors
+    """Base class for all application-specific errors."""
     pass
 
 
 class APIError(ApplicationError):
-    # Something went wrong talking to the API
+    """Error communicating with external APIs (IQAir, OpenWeatherMap)."""
     pass
 
 
 class StorageError(ApplicationError):
-    # Something went wrong reading or writing data
+    """Error reading from or writing to storage backends."""
     pass
 
 
 class ParseError(ApplicationError):
-    # Seomthing went wrong parsing the API response
+    """Error parsing API response data into domain models."""
     pass
