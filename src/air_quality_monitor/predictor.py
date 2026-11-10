@@ -40,7 +40,7 @@ class Predictor:
             8: "medium",
             12: "medium",
             24: "long",
-            48: "long",
+            47: "long",
         }
 
     def predict(self, as_of: datetime | None = None) -> list[Prediction]:

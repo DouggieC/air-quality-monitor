@@ -15,18 +15,20 @@ class FeatureEngineer:
 
     def build(self, as_of: datetime | None = None, include_metadata: bool = False) -> pd.DataFrame:
         self.logger.debug("Executing method")
-        
+
         if as_of is not None:
             as_of = pd.Timestamp(as_of).floor("h")
-            filter_aqi="pollutant_timestamp"
-            filter_we="forecast_for"
-            start_aqi = as_of - pd.Timedelta(hours=72) # 48 hours required, but leave a margin in case of missing vals
-            end_aqi = as_of + pd.Timedelta(hours=1) # Add an extra hour to allow for flooring
-            start_we = as_of - pd.Timedelta(hours=25) # 24 hours required; allow one for flooring
-            end_we = as_of + pd.Timedelta(hours=49) # Add an extra hour to allow for flooring
+            filter_aqi = "pollutant_timestamp"
+            filter_we = "forecast_for"
+            start_aqi = as_of - pd.Timedelta(
+                hours=72
+            )  # 48 hours required, but leave a margin in case of missing vals
+            end_aqi = as_of + pd.Timedelta(hours=1)  # Add an extra hour to allow for flooring
+            start_we = as_of - pd.Timedelta(hours=25)  # 24 hours required; allow one for flooring
+            end_we = as_of + pd.Timedelta(hours=49)  # Add an extra hour to allow for flooring
         else:
             filter_aqi = filter_we = start_aqi = end_aqi = start_we = end_we = None
-        
+
         aqi_df = self.aqi_storage.read(time_filter_col=filter_aqi, start=start_aqi, end=end_aqi)
         we_df = self.weather_storage.read(time_filter_col=filter_we, start=start_we, end=end_we)
 
@@ -35,24 +37,28 @@ class FeatureEngineer:
         aqi_df["pollutant_timestamp"] = aqi_df["pollutant_timestamp"].dt.floor("h")
         we_df["collected_at"] = we_df["collected_at"].dt.floor("h")
         we_df["forecast_for"] = we_df["forecast_for"].dt.floor("h")
-        
+
         # IQAir doesn't necessarily produce a reading every hour, meaning duplicates on city, pollutant_timestamp, with collected_at an hour apart. Need to deduplicate
-        aqi_df = aqi_df.sort_values("collected_at").drop_duplicates(subset=["city", "pollutant_timestamp"], keep="last")
+        aqi_df = aqi_df.sort_values("collected_at").drop_duplicates(
+            subset=["city", "pollutant_timestamp"], keep="last"
+        )
 
         self.logger.debug(
             f"aqi_df pollutant_timestamp range: {aqi_df['pollutant_timestamp'].min()} to {aqi_df['pollutant_timestamp'].max()}"
         )
-        self.logger.debug(f"we_df forecast_for range: {we_df['forecast_for'].min()} to {we_df['forecast_for'].max()}")
+        self.logger.debug(
+            f"we_df forecast_for range: {we_df['forecast_for'].min()} to {we_df['forecast_for'].max()}"
+        )
         self.logger.debug(f"as_of: {as_of}")
 
         # Save full history before filtering
         aqi_full = aqi_df
         we_full = we_df
-        
+
         # Filter by as_of date if required
         if as_of is not None:
             self.logger.debug(f"Filtering AQI and weather dataframes by as_of={as_of}")
-            horizons = [0, 1, 2, 4, 8, 12, 24, 48]
+            horizons = [0, 1, 2, 4, 8, 12, 24, 47]  # Can't guarantee availability of forecast @ +48h
             target_times = [as_of + pd.Timedelta(hours=h) for h in horizons]
 
             aqi_df = aqi_df[
@@ -60,7 +66,7 @@ class FeatureEngineer:
                 & (aqi_df["pollutant_timestamp"] >= as_of - pd.Timedelta(hours=48))
             ]
             aqi_df = aqi_df.sort_values("pollutant_timestamp").drop_duplicates(subset=["city"], keep="last")
-            
+
             we_df = we_df[we_df["forecast_for"].isin(target_times)]
             we_df = we_df.sort_values("collected_at").drop_duplicates(
                 subset=["city", "forecast_for"], keep="last"
@@ -200,10 +206,10 @@ class FeatureEngineer:
             {
                 "aqi_rolling_mean_6h": aqi_rolling_mean_6h,
                 "aqi_rolling_std_6h": aqi_rolling_std_6h,
-                "aqi_rolling_mean_24h": aqi_rolling_mean_24h
+                "aqi_rolling_mean_24h": aqi_rolling_mean_24h,
             }
         ).reset_index()
-        
+
         aqi_lookup = aqi_lookup.rename(columns={"pollutant_timestamp": "_pt_rolling"})
 
         df = df.merge(

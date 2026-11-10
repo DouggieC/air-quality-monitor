@@ -76,7 +76,7 @@ class DataCollector:
                 if self.aq_db_storage:
                     self.aq_db_storage.save(parsed_aq_data, city)
 
-                sleep(60)
+                # sleep(60)
 
             except APIError as e:
                 self.logger.error(f"Error fetching air quality data for {city.city}: {e}")

@@ -38,7 +38,7 @@ class Trainer:
         horizon_ranges = {
             "short": [0, 1, 2],
             "medium": [4, 8, 12],
-            "long": [24, 48],
+            "long": [24, 47],
         }
 
         self.logger.debug("Reading model hyperparameters from config")
@@ -102,7 +102,7 @@ class Trainer:
         horizon_ranges = {
             "short": [0, 1, 2],
             "medium": [4, 8, 12],
-            "long": [24, 48],
+            "long": [24, 47],
         }
 
         models = {
