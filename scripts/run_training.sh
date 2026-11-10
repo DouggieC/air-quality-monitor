@@ -4,6 +4,7 @@
 
 APP_DIR="/home/doug/apps/air-quality-monitor"
 PYTHON="$APP_DIR/.venv/bin/python"
+BASENAME=$(basename $0)
 
 # Get environment variables
 set -a
@@ -11,7 +12,8 @@ source ${APP_DIR}/.env
 set +a
 
 LOG_DIR="/home/doug/cron/log"
-LOCKFILE="/tmp/$0.lock"
+LOGFILE="${LOG_DIR}/${BASENAME}_$$.log"
+LOCKFILE="/tmp/${BASENAME}.lock"
 
 cd $APP_DIR || exit 1
 
@@ -24,24 +26,24 @@ DATE_DESC=$(date +"%b %Y")
 VERSION=$(date +"%Y%m")
 
 # Execute the job
-$PYTHON -m air_quality_monitor.main prepare >> ${LOG_DIR}/$0_$$.log 2>&1 && 
+$PYTHON -m air_quality_monitor.main prepare >> ${LOGFILE} 2>&1 && 
     cp -p data/training_data.parquet data/training_data_${VERSION}.parquet
 $PYTHON -m air_quality_monitor.main training \
     --data-version ${VERSION} \
     --data-filename data/training_data_${VERSION}.parquet \
     --data-description "Monthly run for ${DATE_DESC}" \
-    >> ${LOG_DIR}/$0_$$.log 2>&1
+    >> ${LOGFILE} 2>&1
 
 # Send notifications
-if grep -qE "ERROR | WARNING" ${LOG_DIR}/$0_$$.log; then
-    if grep -q "ERROR" ${LOG_DIR}/$0_$$.log; then
-        MSG="ERROR in training:\n$(grep -E "ERROR | WARNING" ${LOG_DIR}/$0_$$.log)"
+if grep -qE "ERROR | WARNING" ${LOGFILE}; then
+    if grep -q "ERROR" ${LOGFILE}; then
+        MSG="ERROR in training:\n$(grep -E "ERROR | WARNING" ${LOGFILE})"
         PRIORITY="high"
-    elif grep -q "WARNING" ${LOG_DIR}/$0_$$.log; then
-        MSG="WARNING in training:\n$(grep -E "ERROR | WARNING" ${LOG_DIR}/$0_$$.log)"
+    elif grep -q "WARNING" ${LOGFILE}; then
+        MSG="WARNING in training:\n$(grep -E "ERROR | WARNING" ${LOGFILE})"
         PRIORITY="default"
     else
-        MSG="Training completed successfully:\n$(grep 'Training complete:' ${LOG_DIR}/$0_$$.log)"
+        MSG="Training completed successfully:\n$(grep 'Training complete:' ${LOGFILE})"
         PRIORITY="low"
     fi
 else
