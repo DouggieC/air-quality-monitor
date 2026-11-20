@@ -9,6 +9,8 @@ import json
 import logging
 from datetime import UTC, datetime
 
+import mlflow
+
 from .config import Config
 from .features import FeatureEngineer
 from .models import Prediction
@@ -17,32 +19,22 @@ from .models import Prediction
 class Predictor:
     """Generates AQI predictions using trained models.
 
-    Loads models from joblib (production) or MLflow (development) and
+    Loads models from MLflow and
     applies them to feature data built by FeatureEngineer.
     """
+
     def __init__(self, feature_engineer: FeatureEngineer):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug("Creating object")
         self.feature_engineer = feature_engineer
 
-        if Config.IS_PRODUCTION:
-            # Load from models/ via joblib
-            import joblib
-
-            self.models = {
-                "short": joblib.load(Config.MODELS_DIR / "lightgbm_short_latest.joblib"),
-                "medium": joblib.load(Config.MODELS_DIR / "lightgbm_medium_latest.joblib"),
-                "long": joblib.load(Config.MODELS_DIR / "lightgbm_long_latest.joblib"),
-            }
-        else:
-            # Load from MLFlow
-            import mlflow
-
-            self.models = {
-                "short": mlflow.pyfunc.load_model("models:/lightgbm_short/latest"),
-                "medium": mlflow.pyfunc.load_model("models:/lightgbm_medium/latest"),
-                "long": mlflow.pyfunc.load_model("models:/lightgbm_long/latest"),
-            }
+        # Load from MLFlow
+        mlflow.set_tracking_uri(Config.MLFLOW_TRACKING_URI)
+        self.models = {
+            "short": mlflow.pyfunc.load_model("models:/lightgbm_short@production"),
+            "medium": mlflow.pyfunc.load_model("models:/lightgbm_medium@production"),
+            "long": mlflow.pyfunc.load_model("models:/lightgbm_long@production"),
+        }
 
         self.horizon_to_range = {
             0: "short",

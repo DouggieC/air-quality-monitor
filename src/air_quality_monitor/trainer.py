@@ -6,7 +6,7 @@ Trains LightGBM and XGBoost regressors for three forecast ranges:
 - Medium-term (4-12 hours)
 - Long-term (24-47 hours)
 
-Logs experiments to MLflow (dev) and saves models as joblib files (prod).
+Logs experiments to MLflow.
 """
 
 import hashlib
@@ -14,20 +14,17 @@ import json
 import logging
 from datetime import datetime
 from math import sqrt
-from pathlib import Path
 
-import joblib
 import jsonlines
+import mlflow
 import pandas as pd
 from lightgbm import LGBMRegressor
+from mlflow.tracking import MlflowClient
 from scipy.stats import loguniform, randint, uniform
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from xgboost import XGBRegressor
 
 from .config import Config
-
-if not Config.IS_PRODUCTION:
-    import mlflow
 
 
 class Trainer:
@@ -38,6 +35,7 @@ class Trainer:
         data_filename: Path to the parquet file containing training data.
         data_description: Human-readable description of the training run.
     """
+
     def __init__(self, data_version: int, data_filename: str, data_description: str):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.debug("Creating object")
@@ -50,10 +48,10 @@ class Trainer:
         """Train all models using hyperparameters from config/model_params.json.
 
         Trains LightGBM and XGBoost models for each horizon range, evaluates on
-        test set, saves models to disk, and logs metrics to MLflow.
+        test set, registers models with MLflow, and logs metrics.
 
         Outputs:
-            - Models saved to models/{name}_latest.joblib
+            - Models registered in MLflow model registry with version aliases
             - Metrics saved to config/model_metrics.json
             - Experiments logged to log/experiments.jsonl
         """
@@ -74,8 +72,8 @@ class Trainer:
             model_params = json.load(f)
 
         # Set up MLflow tracing
-        if not Config.IS_PRODUCTION:
-            mlflow.set_experiment("AQI Prediction")
+        mlflow.set_tracking_uri(Config.MLFLOW_TRACKING_URI)
+        mlflow.set_experiment("AQI Prediction")
 
         metrics_output = {}
 
@@ -147,8 +145,8 @@ class Trainer:
         }
 
         # Set up MLflow tracing
-        if not Config.IS_PRODUCTION:
-            mlflow.set_experiment("Model Tuning")
+        mlflow.set_tracking_uri(Config.MLFLOW_TRACKING_URI)
+        mlflow.set_experiment("Model Tuning")
 
         # Define hyperparameter ranges
         param_dist = {
@@ -338,6 +336,7 @@ class Trainer:
     def _log_to_mlflow(
         self, metrics, hyperparams, data_params=None, model=None, reg_model_name=None, artifact_path=None
     ):
+        client = MlflowClient()
         mlflow.log_metrics(metrics)
         mlflow.log_params(hyperparams)
         if data_params:
@@ -345,7 +344,8 @@ class Trainer:
         if artifact_path:
             mlflow.log_artifact(artifact_path)
         if model:
-            mlflow.sklearn.log_model(
+            model_type = type(model).__module__.split(".")[0]
+            model_info = getattr(mlflow, model_type).log_model(
                 model,
                 "model",
                 registered_model_name=reg_model_name,
@@ -357,6 +357,12 @@ class Trainer:
                     "xgboost.sklearn.XGBRegressor",
                 ],
             )
+
+            current_version = model_info.registered_model_version
+            version_date = datetime.now().strftime("%Y_%m")
+            client.set_registered_model_alias(reg_model_name, f"v{version_date}", current_version)
+            if model_type == "lightgbm":
+                client.set_registered_model_alias(reg_model_name, "production", current_version)
 
     def _train_and_log(
         self,
@@ -387,8 +393,7 @@ class Trainer:
         self.logger.debug("Executing method")
 
         # Start MLflow
-        if not Config.IS_PRODUCTION:
-            mlflow.start_run(run_name=run_name)
+        mlflow.start_run(run_name=run_name)
 
         # Train the model
         self.logger.info(f"Training {run_name}")
@@ -401,35 +406,20 @@ class Trainer:
 
         # Save artifact
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        if include_model:
-            self.logger.info(f"Saving {run_name} model")
-            filename = f"{run_name}_{timestamp}.joblib"
-            joblib.dump(model, Config.MODELS_DIR / filename)
-
-            # Update symlink for latest model
-            model_file = Path(Config.MODELS_DIR / filename)
-            link_path = Path(Config.MODELS_DIR / f"{run_name}_latest.joblib")
-            if link_path.exists() or link_path.is_symlink():
-                link_path.unlink()
-
-            link_path.symlink_to(model_file.name)
 
         # MLflow
-        if not Config.IS_PRODUCTION:
-            self._log_to_mlflow(
-                metrics,
-                hyperparams,
-                data_params,
-                model if include_model else None,
-                run_name if include_model else None,
-                Config.MODELS_DIR / filename if include_model else None,
-            )
+        self._log_to_mlflow(
+            metrics,
+            hyperparams,
+            data_params,
+            model if include_model else None,
+            run_name if include_model else None,
+        )
 
         # JSON
         self.logger.info(f"Saving experiment details for {run_name} range horizon")
         self._log_experiment(run_name, timestamp, hyperparams, metrics)
 
-        if not Config.IS_PRODUCTION:
-            mlflow.end_run()
+        mlflow.end_run()
 
         return metrics
