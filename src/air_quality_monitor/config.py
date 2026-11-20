@@ -16,6 +16,7 @@ from .models import City
 
 class Config:
     """Central configuration with environment-based settings."""
+
     load_dotenv()  # Load environment variables from .env file
 
     # IQAir credentials & URLs
@@ -34,6 +35,12 @@ class Config:
     LOG_DIR = BASE_DIR / "log"
     MODELS_DIR = BASE_DIR / "models"
     TRAINING_DATA_PATH = DATA_DIR / "training_data.parquet"
+
+    # MLflow configuration
+    MLFLOW_DIR = BASE_DIR / "mlflow"
+    MLFLOW_DB_URI = f"sqlite:///{MLFLOW_DIR}/mlflow.db"
+    MLFLOW_ARTIFACT_ROOT = str(MLFLOW_DIR / "artifacts")
+    MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
 
     # How long before HTTP requests time out?
     REQUEST_TIMEOUT = 30
