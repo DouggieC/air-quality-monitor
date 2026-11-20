@@ -218,6 +218,7 @@ k8s/postgres-secret.yaml
 # MLflow files
 mlflow.db
 mlruns/
+mlflow/
 
 # Miscellaneous notes
 # notes/

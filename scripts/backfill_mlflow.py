@@ -27,5 +27,5 @@ for model, filename in models_to_backfill:
     with mlflow.start_run(run_name=f"backfill_{model}"):
         getattr(mlflow, model_type).log_model(loaded_model, "model", registered_model_name=model)
 
-        client.set_registered_model_alias(model, "v2026.11", version=1)
+        client.set_registered_model_alias(model, "v2026_11", version=1)
         client.set_registered_model_alias(model, "production", version=1)
