@@ -13,11 +13,11 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 class Base(DeclarativeBase):
     """SQLAlchemy declarative base for all ORM models."""
-    pass
 
 
 class DBCity(Base):
     """City reference table with location metadata."""
+
     __tablename__ = "city"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -31,6 +31,7 @@ class DBCity(Base):
 
 class DBAirQualityReading(Base):
     """Historical AQI readings from IQAir."""
+
     __tablename__ = "air_quality_reading"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -50,6 +51,7 @@ class DBAirQualityReading(Base):
 
 class DBWeatherReading(Base):
     """Current weather observations from OpenWeatherMap (not currently used)."""
+
     __tablename__ = "weather_reading"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -77,6 +79,7 @@ class DBWeatherReading(Base):
 
 class DBHourlyForecast(Base):
     """Hourly weather forecasts from OpenWeatherMap."""
+
     __tablename__ = "hourly_forecast"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -103,6 +106,7 @@ class DBHourlyForecast(Base):
 
 class DBDailyForecast(Base):
     """Daily weather forecasts from OpenWeatherMap."""
+
     __tablename__ = "daily_forecast"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -138,6 +142,7 @@ class DBDailyForecast(Base):
 
 class DBPrediction(Base):
     """Model-generated AQI predictions."""
+
     __tablename__ = "prediction"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -147,3 +152,5 @@ class DBPrediction(Base):
     predicted_aqi: Mapped[int] = mapped_column(Integer)  # Predicted AQI based on US EPA standard
     model_name: Mapped[str] = mapped_column(String(100))  # Name of the model used for prediction
     horizon: Mapped[int] = mapped_column(Integer)  # Prediction horizon in hours
+    actual_aqi: Mapped[int | None] = mapped_column(Integer, nullable=True)  # The actual AQI observed
+    residual: Mapped[int | None] = mapped_column(Integer, nullable=True)  # Actual - predicted AQI
