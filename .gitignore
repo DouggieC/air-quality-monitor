@@ -222,3 +222,4 @@ mlflow/
 
 # Miscellaneous notes
 # notes/
+*.pdf
