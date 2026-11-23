@@ -142,7 +142,7 @@ class CSVStorage(FileStorage):
                 df = pd.concat(chunks, ignore_index=True)
 
         except Exception as e:
-            self.logger.exception(f"Error reading {self.filepath}: {e}")
+            self.logger.error(f"Error reading {self.filepath}: {e}")
             raise
 
         # Make sure datetime objects are correctly typed
@@ -162,7 +162,7 @@ class CSVStorage(FileStorage):
         try:
             df = pd.read_csv(self.filepath)
         except Exception as e:
-            self.logger.exception(f"Error reading {self.filepath}: {e}")
+            self.logger.error(f"Error reading {self.filepath}: {e}")
             raise
 
         # Build mask from the filters
@@ -239,6 +239,7 @@ class JSONStorage(FileStorage):
                 writer.write(reading_json)
         except Exception as e:
             self.logger.error(f"Error while saving to file: {e}")
+            raise
 
     def read(
         self, time_filter_col: str | None = None, start: datetime | None = None, end: datetime | None = None
