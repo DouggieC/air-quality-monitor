@@ -170,7 +170,7 @@ def run_prediction(as_of):
 
     Args:
         as_of: Reference time for prediction. None means current time
-               (production mode). Set to a past time for backtesting.
+               (production mode). Set to a past time for testing.
     """
     from .predictor import Predictor
 

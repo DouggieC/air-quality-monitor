@@ -99,8 +99,9 @@ class CSVStorage(FileStorage):
                 index=False,
                 quoting=csv.QUOTE_NONNUMERIC,
             )
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             self.logger.error(f"Error while saving to file: {e}")
+            raise
 
     def read(
         self, time_filter_col: str | None = None, start: datetime | None = None, end: datetime | None = None
@@ -152,6 +153,33 @@ class CSVStorage(FileStorage):
 
         self.logger.debug(f"DataFrame created:\n{df}")
         return df
+
+    def update(self, filters: dict, updates: dict):
+        # Update the CSV file by reading  & rewriting the whole file
+        self.logger.debug("Executing method")
+        self.logger.debug(f"Reading CSV file {self.filepath}")
+
+        try:
+            df = pd.read_csv(self.filepath)
+        except Exception as e:
+            self.logger.exception(f"Error reading {self.filepath}: {e}")
+            raise
+
+        # Build mask from the filters
+        self.logger.debug(f"Filtering based on {filters}")
+        mask = True  # Assume everything
+        for col, val in filters.items():
+            mask = mask & (df[col] == val)
+
+        self.logger.debug(f"Updating with {updates}")
+        df.loc[mask, updates.keys()] = updates.values()
+
+        self.logger.debug(f"Writing back to {self.filepath}")
+        try:
+            df.to_csv(self.filepath, index=False)
+        except Exception as e:
+            self.logger.error(f"Error while saving to file: {e}")
+            raise
 
 
 class JSONStorage(FileStorage):
@@ -255,7 +283,6 @@ class DBStorage(BaseStorage):
                 self.logger.debug(f"Found city:\t{db_city}")
 
                 # Remove city data...
-                # for key in ["city", "state", "country", "latitude", "longitude"]:
                 city_keys = {f.name for f in fields(City)}
                 for key in city_keys:
                     self.logger.debug(f"Popping key {key}")
@@ -330,6 +357,18 @@ class DBStorage(BaseStorage):
                     df[col] = df[col].dt.tz_localize("UTC")
 
         return df
+
+    def update(self, filters: dict, updates: dict):
+        # Update existing table rows
+        self.logger.debug("Executing method")
+
+        try:
+            with Session(self.engine) as session:
+                session.query(self.model_class).filter_by(**filters).update(updates)
+                session.commit()
+        except Exception as e:
+            self.logger.error(f"Error updating database: {e}")
+            raise
 
 
 class ParquetStorage(FileStorage):
