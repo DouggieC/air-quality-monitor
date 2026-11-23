@@ -243,7 +243,7 @@ class JSONStorage(FileStorage):
 
     def read(
         self, time_filter_col: str | None = None, start: datetime | None = None, end: datetime | None = None
-    ) -> list[str]:  # list[AirQualityReading]:
+    ) -> list[str]:
         # Implement JSON fetching logic here
         pass
 
