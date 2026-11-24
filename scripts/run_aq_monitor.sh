@@ -28,13 +28,14 @@ $PYTHON -m air_quality_monitor.main predict >> ${LOGFILE} 2>&1
 # Send notifications
 if grep -qE "ERROR | WARNING | IQAir API" ${LOGFILE}; then
     if grep -q "ERROR" ${LOGFILE}; then
-        MSG="ERROR in collection/prediction:\n$(grep -E "ERROR | WARNING | IQAir API" ${LOGFILE})"
+        MSG=$'ERROR in collection/prediction:\n$(grep -E "ERROR | WARNING | IQAir API" ${LOGFILE})'
         PRIORITY="high"
     elif grep -q "WARNING" ${LOGFILE}; then
-        MSG="WARNING in collection/prediction:\n$(grep -E "WARNING | IQAir API" ${LOGFILE})"
+        MSG=$'WARNING in collection/prediction:\n$(grep -E "WARNING | IQAir API" ${LOGFILE})'
         PRIORITY="default"
     else
-        MSG="Collection/prediction completed successfully:\n$(grep -E "IQAir API" ${LOGFILE})"
+	LMSG=$(grep -E "IQAir API" ${LOGFILE})
+        MSG="Collection/prediction completed successfully:"'\n'"$LMSG"
         PRIORITY="low"
     fi
 else

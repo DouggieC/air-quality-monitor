@@ -37,13 +37,13 @@ $PYTHON -m air_quality_monitor.main training \
 # Send notifications
 if grep -qE "ERROR | WARNING" ${LOGFILE}; then
     if grep -q "ERROR" ${LOGFILE}; then
-        MSG="ERROR in training:\n$(grep -E "ERROR | WARNING" ${LOGFILE})"
+        MSG=$'ERROR in training:\n$(grep -E "ERROR | WARNING" ${LOGFILE})'
         PRIORITY="high"
     elif grep -q "WARNING" ${LOGFILE}; then
-        MSG="WARNING in training:\n$(grep -E "ERROR | WARNING" ${LOGFILE})"
+        MSG=$'WARNING in training:\n$(grep -E "ERROR | WARNING" ${LOGFILE})'
         PRIORITY="default"
     else
-        MSG="Training completed successfully:\n$(grep 'Training complete:' ${LOGFILE})"
+        MSG=$'Training completed successfully:\n$(grep 'Training complete:' ${LOGFILE})'
         PRIORITY="low"
     fi
 else
