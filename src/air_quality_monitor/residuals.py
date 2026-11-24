@@ -67,7 +67,7 @@ class ResidualHandler:
             return 0
 
         # Match predictions to observations on city and timestamp
-        obs_df = obs_df.drop(columns=["id"])
+        obs_df = obs_df.drop(columns=["id"], errors="ignore") # Only exists in DB; ignore if CSV
         merged_df = pd.merge(
             obs_df, pred_df, left_on=["city", "pollutant_timestamp"], right_on=["city", "forecast_for"]
         )

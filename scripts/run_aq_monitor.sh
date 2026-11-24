@@ -26,11 +26,11 @@ $PYTHON -m air_quality_monitor.main collect >> ${LOGFILE} 2>&1
 $PYTHON -m air_quality_monitor.main predict >> ${LOGFILE} 2>&1
 
 # Send notifications
-if grep -qE "ERROR | WARNING | IQAir API" ${LOGFILE}; then
-    if grep -q "ERROR" ${LOGFILE}; then
+if grep -qiE "ERROR | WARNING | IQAir API" ${LOGFILE}; then
+    if grep -iq "ERROR" ${LOGFILE}; then
         MSG=$'ERROR in collection/prediction:\n$(grep -E "ERROR | WARNING | IQAir API" ${LOGFILE})'
         PRIORITY="high"
-    elif grep -q "WARNING" ${LOGFILE}; then
+    elif grep -iq "WARNING" ${LOGFILE}; then
         MSG=$'WARNING in collection/prediction:\n$(grep -E "WARNING | IQAir API" ${LOGFILE})'
         PRIORITY="default"
     else
