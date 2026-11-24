@@ -22,6 +22,7 @@ from .features import FeatureEngineer
 from .logger import setup_logging
 from .models import AirQualityReading, City, DailyForecast, HourlyForecast, Prediction, WeatherReading
 from .parser import AirQualityParser, DailyForecastParser, HourlyForecastParser
+from .residuals import ResidualHandler
 from .storage import DBStorage, JSONStorage
 from .storage_factory import StorageFactory
 
@@ -34,12 +35,14 @@ def _get_feature_storage():
     sf = StorageFactory(Config)
     aqi_csv, aqi_db = sf.get_storage(AirQualityReading)
     we_csv, we_db = sf.get_storage(HourlyForecast)
+    pred_csv, pred_db = sf.get_storage(Prediction)
 
     # Pick DB or CSV. Prefer DB if both available
     aqi_storage = aqi_db or aqi_csv
     we_storage = we_db or we_csv
+    pred_storage = pred_db or pred_csv
 
-    return aqi_storage, we_storage
+    return aqi_storage, we_storage, pred_storage
 
 
 def _parse_as_of(as_of_str: str) -> datetime:
@@ -152,10 +155,10 @@ def run_feature_engineering():
     logger.debug("Executing method")
 
     # Set up storage
-    aqi_storage, we_storage = _get_feature_storage()
+    aqi_storage, we_storage, pred_storage = _get_feature_storage()
 
     # Run feature engineering
-    engineer = FeatureEngineer(aqi_storage, we_storage)
+    engineer = FeatureEngineer(aqi_storage, we_storage, pred_storage)
     training_df = engineer.build()
     training_df.to_parquet(Config.TRAINING_DATA_PATH, index=False)
 
@@ -166,33 +169,42 @@ def run_feature_engineering():
 
 
 def run_prediction(as_of):
-    """Generate AQI predictions for all cities.
+    """Generate AQI predictions for all cities and backfill residuals.
+
+    Runs the prediction pipeline:
+    1. Build features from current observations and weather forecasts
+    2. Generate predictions for all cities and horizons
+    3. Save predictions to storage
+    4. Backfill residuals for past predictions where actuals are now available
 
     Args:
         as_of: Reference time for prediction. None means current time
-               (production mode). Set to a past time for backtesting.
+               (production mode). Set to a past time for testing.
     """
     from .predictor import Predictor
 
     logger = logging.getLogger(__name__)
     logger.debug("Executing method")
 
-    # Set up storage
-    aqi_storage, we_storage = _get_feature_storage()
+    # Set up storage for feature engineering
+    aqi_storage, we_storage, pred_storage = _get_feature_storage()
 
-    # Make predictions
-    engineer = FeatureEngineer(aqi_storage, we_storage)
+    # Build features and generate predictions
+    engineer = FeatureEngineer(aqi_storage, we_storage, pred_storage)
     predictor = Predictor(engineer)
     predictions = predictor.predict(as_of)
 
-    # Store them if it's a real prediction (time=now)
-    # Otherwise, stop
+    # Skip save and backfill for test runs (as_of specified)
     if as_of is not None:
-        logger.info("Test run - skipping save")
+        logger.info("Test run - skipping save and backfill")
         return
 
+    # Get storage backends for predictions and observations
     sf = StorageFactory(Config)
     pred_csv_storage, pred_db_storage = sf.get_storage(Prediction)
+    obs_csv_storage, obs_db_storage = sf.get_storage(AirQualityReading)
+
+    # Save predictions to all configured backends
     for storage in [pred_csv_storage, pred_db_storage]:
         if storage:
             for prediction in predictions:
@@ -210,7 +222,20 @@ def run_prediction(as_of):
                 else:
                     storage.save(prediction)
 
-    logger.info(f"Prediction complete: {len(predictions)} predictions saved")
+    logger.info(f"Saved {len(predictions)} predictions")
+
+    # Backfill residuals for past predictions where actuals are now available
+    # Must match storage types: CSV-to-CSV, DB-to-DB
+    if obs_csv_storage and pred_csv_storage:
+        logger.info("Backfilling residuals (CSV)")
+        rh = ResidualHandler(obs_csv_storage, pred_csv_storage)
+        rh.backfill()
+    if obs_db_storage and pred_db_storage:
+        logger.info("Backfilling residuals (DB)")
+        rh = ResidualHandler(obs_db_storage, pred_db_storage)
+        rh.backfill()
+
+    logger.info("Prediction run complete")
 
 
 def run_training(data_version: int, data_filename: str, data_description: str):

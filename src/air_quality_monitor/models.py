@@ -12,6 +12,7 @@ from datetime import datetime
 @dataclass
 class Reading:
     """Base class for all timestamped readings with location data."""
+
     city: str
     state: str
     country: str
@@ -24,6 +25,7 @@ class Reading:
 @dataclass
 class AirQualityReading(Reading):
     """AQI reading from IQAir with pollutant and basic weather data."""
+
     aqi: int  # AQI based on US EPA standard
     main_pollutant: str  # Main pollutant contributing to the AQI
     pollutant_timestamp: datetime  # Timestamp of the pollutant measurement
@@ -39,6 +41,7 @@ class AirQualityReading(Reading):
 @dataclass
 class WeatherReading(Reading):
     """Current weather observation from OpenWeatherMap."""
+
     dt: datetime  # Observation time (UTC timestamp)
     sunrise: datetime  # Sunrise time (UTC timestamp)
     sunset: datetime  # Sunset time (UTC timestamp)
@@ -62,6 +65,7 @@ class WeatherReading(Reading):
 @dataclass
 class WeatherAlert(Reading):
     """Severe weather alert from OpenWeatherMap (not currently used)."""
+
     sender_name: str  # Alert source. See https://openweathermap.org/api/one-call-3?collection=one_call_api_3.0#listsource
     event: str  # Alert event name
     start: datetime  # Start date & time (UTC timestamp)
@@ -73,12 +77,14 @@ class WeatherAlert(Reading):
 @dataclass
 class Forecast(Reading):
     """Base class for forecast data with target timestamp."""
+
     forecast_for: datetime  # Timestamp when the forecast is for
 
 
 @dataclass
 class HourlyForecast(Forecast):
     """Hourly weather forecast (48 hours) from OpenWeatherMap."""
+
     temperature: float  # Temperature (C; default is K but API calls request metric)
     feels_like: float  # Perceived temperature (C)
     pressure: int  # Atmospheric pressure at MSL, hPa
@@ -100,6 +106,7 @@ class HourlyForecast(Forecast):
 @dataclass
 class DailyForecast(Forecast):
     """Daily weather forecast (8 days) from OpenWeatherMap."""
+
     sunrise: datetime  # Sunrise time (UTC timestamp)
     sunset: datetime  # Sunset time (UTC timestamp)
     temp_morn: float  # Morning temperature (C; default is K but API calls request metric)
@@ -130,6 +137,7 @@ class DailyForecast(Forecast):
 @dataclass
 class City:
     """City configuration with location and timezone for data collection."""
+
     city: str
     state: str
     country: str
@@ -141,7 +149,10 @@ class City:
 @dataclass
 class Prediction(Reading):
     """Model-generated AQI prediction for a specific horizon."""
+
     forecast_for: datetime  # Timestamp when the prediction is for
     predicted_aqi: int  # Predicted AQI
     model_name: str  # Name of the model used (e.g. "lightgbm_short")
     horizon: int  # Prediction horizon in hours
+    actual_aqi: int | None = None  # The actual AQI observed
+    residual: int | None = None  # Actual - predicted AQI

@@ -145,10 +145,44 @@ def sample_hourly_df(sample_hf) -> pd.DataFrame:
 
 
 @pytest.fixture
-def sample_training_df(sample_aqi_df, sample_hourly_df):
+def sample_pred_df() -> pd.DataFrame:
+    """Sample prediction data with residuals spanning 45 days for rolling window tests."""
+    base_time = datetime(2026, 3, 20, 12, 0, 0)  # noqa: DTZ001
+    horizons = [0, 1, 2, 4, 8, 12, 24, 47]
+    rows = []
+
+    # Generate 45 days of predictions (every 6 hours) to support 30d rolling windows
+    for day in range(45):
+        for hour in range(0, 24, 6):
+            collected_at = base_time + timedelta(days=day, hours=hour)
+            for city in ["Sarajevo", "London"]:
+                for h in horizons:
+                    predicted_aqi = 50 + (10 if city == "London" else 0)
+                    # Sarajevo underpredicts by ~5, London overpredicts by ~3
+                    actual_aqi = predicted_aqi + (5 if city == "Sarajevo" else -3)
+                    residual = actual_aqi - predicted_aqi
+
+                    rows.append({
+                        "city": city,
+                        "collected_at": collected_at,
+                        "forecast_for": collected_at + timedelta(hours=h),
+                        "predicted_aqi": predicted_aqi,
+                        "model_name": "lightgbm_v1",
+                        "horizon": h,
+                        "actual_aqi": actual_aqi,
+                        "residual": residual,
+                    })
+
+    return pd.DataFrame(rows)
+
+
+@pytest.fixture
+def sample_training_df(sample_aqi_df, sample_hourly_df, sample_pred_df):
     aqi_storage = MockStorage(sample_aqi_df)
     weather_storage = MockStorage(sample_hourly_df)
-    engineer = FeatureEngineer(aqi_storage, weather_storage)
+    pred_storage = MockStorage(sample_pred_df)
+
+    engineer = FeatureEngineer(aqi_storage, weather_storage, pred_storage)
     return engineer.build()
 
 
