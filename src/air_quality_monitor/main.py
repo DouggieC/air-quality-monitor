@@ -316,13 +316,9 @@ def main():
             logger.info("Engineering features")
             run_feature_engineering()
         case "train":
-            from .trainer import Trainer
-
             logger.info("Training models")
             run_training(args.data_version, args.data_filename, args.data_description)
         case "tune":
-            from .trainer import Trainer
-
             logger.info("Tuning hyperparameters")
             run_tuning(args.data_version, args.data_filename, args.data_description)
         case "predict":
