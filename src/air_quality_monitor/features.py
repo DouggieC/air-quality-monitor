@@ -356,27 +356,27 @@ class FeatureEngineer:
         self.logger.info(f"Found {len(pred_filtered)} predictions with residuals")
         pred_filtered = pred_filtered.sort_values(["city", "forecast_for"])
 
+        # Aggregate by city+forecast_for before rolling to avoid merge explosion
+        pred_city = pred_filtered.groupby(["city", "forecast_for"])["residual"].mean().reset_index()
+
         city_mean = (
-            pred_filtered.groupby("city").rolling("30d", min_periods=10, on="forecast_for")["residual"].mean()
+            pred_city.groupby("city").rolling("30d", min_periods=10, on="forecast_for")["residual"].mean()
         ).reset_index()
         city_mean = city_mean.rename(columns={"residual": "residual_rolling_mean_by_city_30d"})
-        city_mean = city_mean.drop(columns=["level_1"])
 
         city_mean_7d = (
-            pred_filtered.groupby("city").rolling("7d", min_periods=3, on="forecast_for")["residual"].mean()
+            pred_city.groupby("city").rolling("7d", min_periods=3, on="forecast_for")["residual"].mean()
         ).reset_index()
         city_mean_7d = city_mean_7d.rename(
             columns={"residual": "residual_rolling_mean_by_city_7d", "forecast_for": "_ff_m7d"}
         )
-        city_mean_7d = city_mean_7d.drop(columns=["level_1"])
 
         city_std = (
-            pred_filtered.groupby("city").rolling("30d", min_periods=10, on="forecast_for")["residual"].std()
+            pred_city.groupby("city").rolling("30d", min_periods=10, on="forecast_for")["residual"].std()
         ).reset_index()
         city_std = city_std.rename(
             columns={"residual": "residual_rolling_std_by_city_30d", "forecast_for": "_ff_std"}
         )
-        city_std = city_std.drop(columns=["level_1"])
 
         city_lookup = city_mean.merge(
             city_mean_7d, left_on=["city", "forecast_for"], right_on=["city", "_ff_m7d"]
@@ -398,23 +398,25 @@ class FeatureEngineer:
         )
         df = df.drop(columns=["_ff_lookup"])
 
+        pred_filtered = pred_filtered.sort_values(["horizon", "forecast_for"])
+        # Aggregate by horizon+forecast_for before rolling
+        pred_horizon = pred_filtered.groupby(["horizon", "forecast_for"])["residual"].mean().reset_index()
+
         horizon_mean = (
-            pred_filtered.groupby("horizon")
+            pred_horizon.groupby("horizon")
             .rolling("30d", min_periods=10, on="forecast_for")["residual"]
             .mean()
         ).reset_index()
         horizon_mean = horizon_mean.rename(columns={"residual": "residual_rolling_mean_by_horizon_30d"})
-        horizon_mean = horizon_mean.drop(columns=["level_1"])
 
         horizon_std = (
-            pred_filtered.groupby("horizon")
+            pred_horizon.groupby("horizon")
             .rolling("30d", min_periods=10, on="forecast_for")["residual"]
             .std()
         ).reset_index()
         horizon_std = horizon_std.rename(
             columns={"residual": "residual_rolling_std_by_horizon_30d", "forecast_for": "_ff_std"}
         )
-        horizon_std = horizon_std.drop(columns=["level_1"])
 
         horizon_lookup = horizon_mean.merge(
             horizon_std, left_on=["horizon", "forecast_for"], right_on=["horizon", "_ff_std"]
