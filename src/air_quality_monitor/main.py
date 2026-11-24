@@ -35,12 +35,14 @@ def _get_feature_storage():
     sf = StorageFactory(Config)
     aqi_csv, aqi_db = sf.get_storage(AirQualityReading)
     we_csv, we_db = sf.get_storage(HourlyForecast)
+    pred_csv, pred_db = sf.get_storage(Prediction)
 
     # Pick DB or CSV. Prefer DB if both available
     aqi_storage = aqi_db or aqi_csv
     we_storage = we_db or we_csv
+    pred_storage = pred_db or pred_csv
 
-    return aqi_storage, we_storage
+    return aqi_storage, we_storage, pred_storage
 
 
 def _parse_as_of(as_of_str: str) -> datetime:
@@ -153,10 +155,10 @@ def run_feature_engineering():
     logger.debug("Executing method")
 
     # Set up storage
-    aqi_storage, we_storage = _get_feature_storage()
+    aqi_storage, we_storage, pred_storage = _get_feature_storage()
 
     # Run feature engineering
-    engineer = FeatureEngineer(aqi_storage, we_storage)
+    engineer = FeatureEngineer(aqi_storage, we_storage, pred_storage)
     training_df = engineer.build()
     training_df.to_parquet(Config.TRAINING_DATA_PATH, index=False)
 
@@ -185,10 +187,10 @@ def run_prediction(as_of):
     logger.debug("Executing method")
 
     # Set up storage for feature engineering
-    aqi_storage, we_storage = _get_feature_storage()
+    aqi_storage, we_storage, pred_storage = _get_feature_storage()
 
     # Build features and generate predictions
-    engineer = FeatureEngineer(aqi_storage, we_storage)
+    engineer = FeatureEngineer(aqi_storage, we_storage, pred_storage)
     predictor = Predictor(engineer)
     predictions = predictor.predict(as_of)
 
