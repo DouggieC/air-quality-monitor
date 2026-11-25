@@ -65,8 +65,8 @@ class DataCollector:
 
         for city in cities:
             call_count += 1
-            if call_count == 3:
-                # Reset the counter to start the next batch of 3 calls and sleep
+            if call_count == 5:
+                # Reset the counter to start the next batch of 5 calls and sleep
                 call_count = 0
                 self.logger.info("Max calls/min reached. Sleeping for 1 minute...")
                 sleep(60)
