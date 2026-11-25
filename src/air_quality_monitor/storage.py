@@ -192,10 +192,16 @@ class CSVStorage(FileStorage):
         self.logger.info(f"Bulk updating {len(updates_df)} rows in {self.filepath}")
 
         try:
-            df = pd.read_csv(self.filepath)
+            df = pd.read_csv(self.filepath, parse_dates=self._get_datetime_cols())
         except Exception as e:
             self.logger.error(f"Error reading {self.filepath}: {e}")
             raise
+
+        # Make sure datetime objects are correctly typed
+        for col in self._get_datetime_cols():
+            if not pd.api.types.is_datetime64_any_dtype(df[col]):
+                self.logger.debug(f"Converting column {col} to datetime")
+                df[col] = pd.to_datetime(df[col], utc=True, format="ISO8601")
 
         df = df.set_index(key_columns)
         updates_df = updates_df.set_index(key_columns)
