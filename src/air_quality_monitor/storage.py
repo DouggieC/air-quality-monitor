@@ -181,6 +181,36 @@ class CSVStorage(FileStorage):
             self.logger.error(f"Error while saving to file: {e}")
             raise
 
+    def bulk_update(self, updates_df: pd.DataFrame, key_columns: list[str]):
+        """Bulk update rows by matching on key columns.
+
+        Args:
+            updates_df: DataFrame containing key columns plus columns to update.
+            key_columns: Column names to match rows on (composite key).
+        """
+        self.logger.debug("Executing method")
+        self.logger.info(f"Bulk updating {len(updates_df)} rows in {self.filepath}")
+
+        try:
+            df = pd.read_csv(self.filepath)
+        except Exception as e:
+            self.logger.error(f"Error reading {self.filepath}: {e}")
+            raise
+
+        df = df.set_index(key_columns)
+        updates_df = updates_df.set_index(key_columns)
+
+        df.update(updates_df)
+        df = df.reset_index()
+
+        try:
+            df.to_csv(self.filepath, index=False)
+        except Exception as e:
+            self.logger.error(f"Error while saving to file: {e}")
+            raise
+
+        self.logger.info("Bulk update complete")
+
 
 class JSONStorage(FileStorage):
     """JSONL (JSON Lines) storage for raw API responses.
@@ -370,6 +400,26 @@ class DBStorage(BaseStorage):
         except Exception as e:
             self.logger.error(f"Error updating database: {e}")
             raise
+
+    def bulk_update(self, updates: list[dict]):
+        """Bulk update rows using primary key.
+
+        Args:
+            updates: List of dicts, each containing 'id' (primary key)
+                     plus the fields to update.
+        """
+        self.logger.debug("Executing method")
+        self.logger.info(f"Bulk updating {len(updates)} rows")
+
+        try:
+            with Session(self.engine) as session:
+                session.bulk_update_mappings(self.model_class, updates)
+                session.commit()
+        except Exception as e:
+            self.logger.error(f"Error updating database: {e}")
+            raise
+
+        self.logger.info("Bulk update complete")
 
 
 class ParquetStorage(FileStorage):

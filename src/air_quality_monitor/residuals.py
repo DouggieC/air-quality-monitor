@@ -77,25 +77,20 @@ class ResidualHandler:
         merged_df["actual_aqi"] = merged_df["aqi"]
         merged_df["residual"] = merged_df["actual_aqi"] - merged_df["predicted_aqi"]
 
-        # Update each matched prediction
-        update_count = 0
-        for _, row in merged_df.iterrows():
-            # Build filter to identify the row - differs by storage type
-            if isinstance(self.pred_storage, DBStorage):
-                filters = {"id": row["id"]}
-            elif isinstance(self.pred_storage, CSVStorage):
-                filters = {
-                    "city": row["city"],
-                    "forecast_for": row["forecast_for"],
-                    "model_name": row["model_name"],
-                    "horizon": row["horizon"],
-                }
-            else:
-                raise TypeError(f"Unsupported storage type: {type(self.pred_storage)}")
+        # Update all matched predictions
+        if isinstance(self.pred_storage, DBStorage):
+            # Build list of dicts with id & update values
+            updates = merged_df[["id", "actual_aqi", "residual"]].to_dict("records")
+            self.pred_storage.bulk_update(updates)
+        elif isinstance(self.pred_storage, CSVStorage):
+            # Build DF with key columns & update columns
+            key_columns = ["city", "forecast_for", "model_name", "horizon"]
+            updates_df = merged_df[key_columns + ["actual_aqi", "residual"]]
+            self.pred_storage.bulk_update(updates_df, key_columns)
+        else:
+            raise TypeError(f"Unsupported storage type: {type(self.pred_storage)}")
 
-            updates = {"actual_aqi": row["actual_aqi"], "residual": row["residual"]}
-            self.pred_storage.update(filters, updates)
-            update_count += 1
+        update_count = len(merged_df)
 
         self.logger.info(f"Updated {update_count} predictions with residuals")
         return update_count
