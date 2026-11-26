@@ -29,12 +29,10 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:8080",
-        "https://aqipredictor.org"
-    ],
+    allow_origins=["http://localhost:8080", "https://aqipredictor.org"],
     allow_methods=["GET"],
 )
+
 
 @app.get("/cities")
 def get_cities():
@@ -59,10 +57,9 @@ def get_predictions(city: str):
     predictions = predictions[predictions["city"] == city]
     latest = predictions["collected_at"].max()
     predictions = predictions[(predictions["collected_at"] == latest) & (predictions["horizon"] >= 2)]
-    predictions.drop(
-        columns=["id", "model_name", "state", "country", "latitude", "longitude", "timezone"], inplace=True
-    )
-    predictions = predictions.sort_values(by="horizon")
+    predictions = predictions[
+        ["city", "forecast_for", "horizon", "collected_at", "predicted_aqi"]
+    ].sort_values(by="horizon")
     return predictions.to_dict(orient="records")
 
 

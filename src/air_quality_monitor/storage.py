@@ -197,6 +197,8 @@ class CSVStorage(FileStorage):
             self.logger.error(f"Error reading {self.filepath}: {e}")
             raise
 
+        original_cols = df.columns.to_list()
+
         # Make sure datetime objects are correctly typed
         for col in self._get_datetime_cols():
             if not pd.api.types.is_datetime64_any_dtype(df[col]):
@@ -208,6 +210,7 @@ class CSVStorage(FileStorage):
 
         df.update(updates_df)
         df = df.reset_index()
+        df = df[original_cols]  # Restore original column order
 
         try:
             df.to_csv(self.filepath, index=False)
