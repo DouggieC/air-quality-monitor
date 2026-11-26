@@ -11,8 +11,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import Config
-from .models import City, Prediction
-from .storage import CSVStorage, DBStorage
+from .models import Prediction
 from .storage_factory import StorageFactory
 
 
