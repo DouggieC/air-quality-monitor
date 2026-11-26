@@ -35,15 +35,18 @@ $PYTHON -m air_quality_monitor.main training \
     >> ${LOGFILE} 2>&1
 
 # Send notifications
-if grep -qE "ERROR | WARNING" ${LOGFILE}; then
-    if grep -q "ERROR" ${LOGFILE}; then
-        MSG=$'ERROR in training:\n$(grep -E "ERROR | WARNING" ${LOGFILE})'
+if grep -qiE "ERROR | WARNING | Training complete" ${LOGFILE}; then
+    if grep -qi "ERROR" ${LOGFILE}; then
+        LMSG=$(grep -iE "ERROR | WARNING" ${LOGFILE})
+        MSG="ERROR in training:"$'\n'"${LMSG}"
         PRIORITY="high"
-    elif grep -q "WARNING" ${LOGFILE}; then
-        MSG=$'WARNING in training:\n$(grep -E "ERROR | WARNING" ${LOGFILE})'
+    elif grep -qi "WARNING" ${LOGFILE}; then
+        LMSG=$(grep -iE "ERROR | WARNING" ${LOGFILE})
+        MSG="WARNING in training:"$'\n'"${LMSG}"
         PRIORITY="default"
     else
-        MSG=$'Training completed successfully:\n$(grep 'Training complete:' ${LOGFILE})'
+        LMSG=$(grep -i 'Training complete:' ${LOGFILE})
+        MSG="Training completed successfully:"$'\n'"${LMSG}"
         PRIORITY="low"
     fi
 else
