@@ -91,6 +91,14 @@ class CSVStorage(FileStorage):
 
         df_new = pd.DataFrame([asdict(reading)])
 
+        if self.filepath.exists():
+            try:
+                existing_cols = pd.read_csv(self.filepath, nrows=0).columns.tolist()
+                df_new = df_new[existing_cols]
+            except Exception as e:
+                self.logger.error(f"Error while reading file: {e}")
+                raise
+
         try:
             df_new.to_csv(
                 self.filepath,

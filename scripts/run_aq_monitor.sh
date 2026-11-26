@@ -36,7 +36,7 @@ if grep -qiE "ERROR | WARNING | IQAir API" ${LOGFILE}; then
         MSG="WARNING in collection/prediction:"$'\n'"${LMSG}"
         PRIORITY="default"
     else
-	    LMSG=$(grep -E "IQAir API" ${LOGFILE})
+        LMSG=$(grep -E "IQAir API" ${LOGFILE})
         MSG="Collection/prediction completed successfully:"$'\n'"$LMSG"
         PRIORITY="low"
     fi
